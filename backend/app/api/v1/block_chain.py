@@ -4,7 +4,8 @@ from app.db.base import get_session as get_db
 from app.schemas.block_chain import MiningResult, TransactionPoolStatus
 from app.services.mining import MiningService
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/blockchain", tags=["auth"])
+
 
 
 @router.post("/mine", response_model=MiningResult)

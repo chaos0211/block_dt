@@ -1,7 +1,7 @@
 from pydantic import BaseModel, validator
 from typing import Optional, List
 from datetime import datetime
-from app.db.models.project import ProjectStatus
+from app.db.models.projects import ProjectStatus
 
 
 class ProjectBase(BaseModel):

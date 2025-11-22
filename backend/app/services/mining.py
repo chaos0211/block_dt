@@ -2,12 +2,12 @@ import time
 import threading
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from ..models.blockchain import Block, Transaction, TransactionPool
-from ..models.donation import Donation, TransactionStatus
-from ..schemas.blockchain import TransactionData, BlockData, MiningResult
-from .blockchain_service import BlockchainService
-from .donation_service import DonationService
-from ..config import settings
+from app.db.models.block_chain import Block, Transaction, TransactionPool
+from app.db.models.donation import Donation, TransactionStatus
+from app.schemas.block_chain import TransactionData, BlockData, MiningResult
+from app.services.block_chain import BlockchainService
+from app.services.donation import DonationService
+from app.core.config import settings
 import json
 from datetime import datetime
 

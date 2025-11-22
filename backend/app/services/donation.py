@@ -1,11 +1,11 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from ..models.donation import Donation, TransactionStatus
-from ..models.project import Project
-from ..models.user import User
-from ..schemas.donation import DonationCreate
-from .blockchain_service import BlockchainService, TransactionData
+from app.db.models.donation import Donation, TransactionStatus
+from app.db.models.projects import Project
+from app.db.models.user import User
+from app.schemas.donation import DonationCreate
+from app.services.block_chain import BlockchainService, TransactionData
 import time
 import uuid
 

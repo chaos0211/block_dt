@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.models.block_chain import Block, Transaction, TransactionPool
 from app.db.models.donation import Donation, TransactionStatus
 from app.schemas.block_chain import TransactionData, BlockData, MiningResult
-from ..config import settings   # 这里的settings 是
+from app.core.config import settings   # 这里的settings 是
 import uuid
 
 

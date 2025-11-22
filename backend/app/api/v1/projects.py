@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from ...database import get_db
-from ...schemas.project import ProjectCreate, ProjectApprove, ProjectResponse, ProjectList
-from ...services.project_service import ProjectService
-from ...models.project import ProjectStatus
+from app.db.base import get_session as get_db
+from app.schemas.projects import ProjectCreate, ProjectApprove, ProjectResponse, ProjectList
+from app.services.projects import ProjectService
+from app.db.models.projects import ProjectStatus
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/projects", tags=["auth"])
+
 
 
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)

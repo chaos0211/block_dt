@@ -5,7 +5,9 @@
       <form class="space-y-3" @submit.prevent="onSubmit">
         <input v-model="username" type="text" placeholder="用户名" class="w-full border rounded px-3 py-2" />
         <input v-model="password" type="password" placeholder="密码" class="w-full border rounded px-3 py-2" />
-        <button class="w-full bg-primary text-white py-2 rounded">登录</button>
+        <button class="w-full bg-primary text-white py-2 rounded disabled:opacity-50" :disabled="loading">
+          {{ loading ? "登录中..." : "登录" }}
+        </button>
       </form>
       <p class="text-sm text-info mt-4">没有账户？<router-link to="/register" class="text-primary">去注册</router-link></p>
     </div>
@@ -26,18 +28,22 @@ async function onSubmit() {
     alert("请输入用户名和密码");
     return;
   }
+
   loading.value = true;
   try {
-    const { data } = await http.post("/api/v1/auth/login", {
-      username: username.value,
-      password: password.value,
-    });
-    // 保存 JWT Token
-    if (data.token) {
-      localStorage.setItem("token", data.token);
+    const formData = new URLSearchParams();
+    formData.append("username", username.value);
+    formData.append("password", password.value);
+
+    const { data } = await http.post("/api/v1/auth/login", formData);
+
+    // 保存 JWT Access Token（后端返回 access_token）
+    if (data.access_token) {
+      localStorage.setItem("token", data.access_token);
     }
-    // 保存当前用户名
-    localStorage.setItem("session_user", data.username);
+
+    // 保存当前用户名（后端不返回用户名，所以用输入值）
+    localStorage.setItem("session_user", username.value);
 
     // 登录成功后跳转
     router.push("/cockpit");

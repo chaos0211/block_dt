@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from ...database import get_db
-from ...schemas.donation import DonationCreate, DonationResponse
-from ...services.donation_service import DonationService
+from app.db.base import get_session as get_db
+from app.schemas.donation import DonationCreate, DonationResponse
+from app.services.donation import DonationService
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/donations", tags=["auth"])
+
 
 
 @router.post("/", response_model=DonationResponse, status_code=status.HTTP_201_CREATED)

@@ -2,7 +2,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "mysql+aiomysql://root:123456@127.0.0.1:33309/donate"
+DATABASE_URL = "mysql+aiomysql://root:123456@127.0.0.1:33309/chain"
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -39,9 +39,11 @@ async_session = async_sessionmaker(
 # Base = declarative_base()
 
 from app.db.models.user import User
-from app.db.models.blockchain import Block
-from app.db.models.donation import Donation, DonationStatus
-from app.db.models.projects import Project, ProjectStatus, ProjectChainStatus
+from app.db.models.block_chain import Block, TransactionPool
+from app.db.models.donation import Donation, TransactionStatus
+from app.db.models.projects import Project, ProjectStatus
+from app.db.models.fund_usage import FundUsage
+from app.db.models.project_update import ProjectUpdate
 
 
 # FastAPI dependency helper
