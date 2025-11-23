@@ -2,6 +2,8 @@ import hashlib
 import json
 import time
 from typing import List, Optional, Dict, Any
+
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.db.models.block_chain import Block, Transaction, TransactionPool
 from app.db.models.donation import Donation, TransactionStatus

@@ -13,9 +13,6 @@
               项目名称
             </th>
             <th class="px-6 py-4 text-sm font-semibold text-gray-700">
-              所属组织
-            </th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-700">
               已筹金额 / 目标金额
             </th>
             <th class="px-6 py-4 text-sm font-semibold text-gray-700">
@@ -47,18 +44,15 @@
                 >
                   图
                 </div>
-                <span class="font-medium">{{ project.name }}</span>
+                <span class="font-medium">{{ project.title }}</span>
               </div>
-            </td>
-            <td class="px-6 py-4">
-              {{ orgName(project.organization) }}
             </td>
             <td class="px-6 py-4">
               <div>
                 <div class="flex justify-between text-sm mb-1">
-                  <span>¥{{ formatNumber(project.raisedAmount) }}</span>
+                  <span>¥{{ formatNumber(project.current_amount) }}</span>
                   <span class="text-gray-500">
-                    /{{ formatNumber(project.targetAmount) }}
+                    /{{ formatNumber(project.target_amount) }}
                   </span>
                 </div>
                 <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -81,17 +75,12 @@
               </span>
             </td>
             <td class="px-6 py-4 text-gray-500">
-              {{ project.createdAt }}
+              {{ project.created_at }}
             </td>
             <td class="px-6 py-4">
               <div>
-                <div class="text-sm">{{ project.blockchainInfo }}</div>
-                <div
-                  v-if="project.blockchainInfo === '已上链'"
-                  class="text-xs text-gray-500"
-                >
-                  区块高度: {{ project.blockHeight }}
-                </div>
+                <div class="text-sm">{{ project.blockchain_tx_hash ? '已上链' : '待上链' }}</div>
+                <div v-if="project.blockchain_tx_hash" class="text-xs text-gray-500">Tx: {{ project.blockchain_tx_hash.slice(0, 10) }}...</div>
               </div>
             </td>
             <td class="px-6 py-4 text-right">
@@ -117,7 +106,7 @@
           </tr>
 
           <tr v-if="!projects || !projects.length">
-            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
               暂无匹配项目
             </td>
           </tr>
@@ -172,18 +161,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type ProjectStatus = 'inProgress' | 'completed' | 'reviewing' | 'rejected'
-
 interface Project {
   id: number
-  name: string
-  organization: string
-  targetAmount: number
-  raisedAmount: number
-  status: ProjectStatus
-  createdAt: string
-  blockchainInfo: '已上链' | '待上链'
-  blockHeight?: number | ''
+  title: string
+  target_amount: number
+  current_amount: number
+  status: string
+  created_at: string
+  blockchain_address?: string | null
+  blockchain_tx_hash?: string | null
+  on_chain_at?: string | null
 }
 
 const props = withDefaults(
@@ -236,38 +223,26 @@ const goNext = () => {
 }
 
 const progressPercent = (p: Project) => {
-  if (!p.targetAmount) return 0
-  return Math.min(100, Math.round((p.raisedAmount / p.targetAmount) * 100))
+  if (!p.target_amount) return 0
+  return Math.min(100, Math.round((p.current_amount / p.target_amount) * 100))
 }
 
-const statusText = (status: ProjectStatus) => {
-  const map: Record<ProjectStatus, string> = {
-    inProgress: '进行中',
-    completed: '已结束',
-    reviewing: '审核中',
-    rejected: '已驳回'
+const statusText = (status: string) => {
+  const map: Record<string, string> = {
+    PENDING: '待审核',
+    APPROVED: '已审核',
+    ON_CHAIN: '已上链'
   }
   return map[status] || status
 }
 
-const statusBadgeClass = (status: ProjectStatus) => {
-  const map: Record<ProjectStatus, string> = {
-    inProgress: 'bg-primary-light text-primary',
-    completed: 'bg-success-light text-success',
-    reviewing: 'bg-warning-light text-warning',
-    rejected: 'bg-danger-light text-danger'
+const statusBadgeClass = (status: string) => {
+  const map: Record<string, string> = {
+    PENDING: 'bg-warning-light text-warning',
+    APPROVED: 'bg-primary-light text-primary',
+    ON_CHAIN: 'bg-success-light text-success'
   }
   return map[status] || 'bg-gray-100 text-gray-500'
-}
-
-const orgName = (orgCode: string) => {
-  const map: Record<string, string> = {
-    org1: '爱心公益协会',
-    org2: '阳光慈善基金会',
-    org3: '温暖救助中心',
-    org4: '希望工程办公室'
-  }
-  return map[orgCode] || orgCode
 }
 
 const formatNumber = (num: number) => {

@@ -59,26 +59,9 @@
             class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-300 bg-white"
           >
             <option value="">全部状态</option>
-            <option value="inProgress">进行中</option>
-            <option value="completed">已结束</option>
-            <option value="reviewing">审核中</option>
-            <option value="rejected">已驳回</option>
-          </select>
-        </div>
-
-        <div class="w-full md:w-64">
-          <label class="block text-sm font-medium text-gray-500 mb-1">
-            所属组织
-          </label>
-          <select
-            v-model="filters.org"
-            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-300 bg-white"
-          >
-            <option value="">全部组织</option>
-            <option value="org1">爱心公益协会</option>
-            <option value="org2">阳光慈善基金会</option>
-            <option value="org3">温暖救助中心</option>
-            <option value="org4">希望工程办公室</option>
+            <option value="PENDING">待审核</option>
+            <option value="APPROVED">已审核</option>
+            <option value="ON_CHAIN">已上链</option>
           </select>
         </div>
 
@@ -177,58 +160,26 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
-              所属机构
+              项目详情描述 <span class="text-red-500">*</span>
             </label>
-            <select
-              v-model="createForm.orgCode"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
-            >
-              <option value="">请选择发起机构</option>
-              <option value="org1">爱心公益协会</option>
-              <option value="org2">阳光慈善基金会</option>
-              <option value="org3">温暖救助中心</option>
-              <option value="org4">希望工程办公室</option>
-            </select>
-            <p class="mt-1 text-xs text-gray-400">
-              后续会根据登录用户角色自动锁定或下拉选择机构。
-            </p>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                目标筹款金额（元）
-              </label>
-              <input
-                v-model.number="createForm.targetAmount"
-                type="number"
-                min="0"
-                placeholder="例如 500000"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                项目类别
-              </label>
-              <input
-                v-model="createForm.category"
-                type="text"
-                placeholder="例如 教育、医疗、环保等"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-            </div>
+            <textarea
+              v-model="createForm.description"
+              rows="4"
+              placeholder="请详细描述受助对象、资金需求、使用计划与预期成果等信息"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+            />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
-              项目简介
+              目标筹款金额（元） <span class="text-red-500">*</span>
             </label>
-            <textarea
-              v-model="createForm.shortDesc"
-              rows="3"
-              placeholder="简要描述项目背景、用途与预期影响"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+            <input
+              v-model.number="createForm.targetAmount"
+              type="number"
+              min="0"
+              placeholder="例如 500000"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
         </div>
@@ -242,7 +193,7 @@
           </button>
           <button
             class="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            :disabled="!createForm.title"
+            :disabled="!createForm.title || !createForm.description || !createForm.targetAmount"
             @click="handleCreateProject"
           >
             确认创建
@@ -272,26 +223,22 @@
         <div class="px-6 py-4 space-y-3" v-if="currentProject">
           <div>
             <div class="text-xs text-gray-500 mb-1">项目名称</div>
-            <div class="text-sm font-medium text-gray-900">{{ currentProject.name }}</div>
+            <div class="text-sm font-medium text-gray-900">{{ currentProject.title }}</div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <div class="text-xs text-gray-500 mb-1">所属机构</div>
-              <div class="text-sm text-gray-800">{{ currentProject.organization || '—' }}</div>
-            </div>
-            <div>
               <div class="text-xs text-gray-500 mb-1">创建时间</div>
-              <div class="text-sm text-gray-800">{{ currentProject.createdAt || '—' }}</div>
+              <div class="text-sm text-gray-800">{{ currentProject.created_at ? currentProject.created_at.slice(0, 10) : '—' }}</div>
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <div class="text-xs text-gray-500 mb-1">目标筹款金额</div>
-              <div class="text-sm text-gray-900">{{ formatNumber(currentProject.targetAmount || 0) }} 元</div>
+              <div class="text-sm text-gray-900">{{ formatNumber(currentProject.target_amount || 0) }} 元</div>
             </div>
             <div>
               <div class="text-xs text-gray-500 mb-1">当前已筹</div>
-              <div class="text-sm text-gray-900">{{ formatNumber(currentProject.raisedAmount || 0) }} 元</div>
+              <div class="text-sm text-gray-900">{{ formatNumber(currentProject.current_amount || 0) }} 元</div>
             </div>
           </div>
           <div class="mt-2">
@@ -310,7 +257,7 @@
           <div>
             <div class="text-xs text-gray-500 mb-1">链上状态</div>
             <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" :class="statusBadgeClass(currentProject.status)">
-              {{ currentProject.blockchainInfo }} · {{ statusText(currentProject.status) }}
+              {{ currentProject.blockchain_tx_hash ? '已上链' : '待上链' }} · {{ statusText(currentProject.status) }}
             </div>
           </div>
         </div>
@@ -342,7 +289,7 @@
           <h3 class="text-lg font-semibold text-gray-800">确认捐赠</h3>
         </div>
         <div class="px-6 py-4 space-y-2 text-sm text-gray-700">
-          <p>确认向「{{ currentProject.name }}」捐赠 {{ donationAmount }} 元吗？</p>
+          <p>确认向「{{ currentProject.title }}」捐赠 {{ donationAmount }} 元吗？</p>
         </div>
         <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
           <button
@@ -370,18 +317,18 @@ import StatsCards from '@/components/charts/StatsCards.vue'
 import ProjectList from '@/components/charts/ProjectList.vue'
 import { apiCreateDonation, apiEnqueueDonation } from '@/api/donate'
 
-type ProjectStatus = 'inProgress' | 'completed' | 'reviewing' | 'rejected'
+type ProjectStatus = 'PENDING' | 'APPROVED' | 'ON_CHAIN'
 
 interface Project {
   id: number
-  name: string
-  organization: string
-  targetAmount: number
-  raisedAmount: number
-  status: ProjectStatus
-  createdAt: string
-  blockchainInfo: '已上链' | '待上链'
-  blockHeight?: number | ''
+  title: string
+  target_amount: number
+  current_amount: number
+  status: ProjectStatus | string
+  created_at: string
+  blockchain_address?: string | null
+  blockchain_tx_hash?: string | null
+  on_chain_at?: string | null
 }
 
 const projects = ref<Project[]>([])
@@ -397,19 +344,15 @@ const showDonateConfirm = ref(false)
 
 const createForm = reactive({
   title: '',
-  orgCode: '',
+  description: '',
   targetAmount: 0,
-  category: '',
-  shortDesc: ''
 })
 
 const openCreateModal = () => {
   // 重置表单再打开
   createForm.title = ''
-  createForm.orgCode = ''
+  createForm.description = ''
   createForm.targetAmount = 0
-  createForm.category = ''
-  createForm.shortDesc = ''
   showCreateModal.value = true
 }
 
@@ -476,11 +419,8 @@ const handleCreateProject = async () => {
 
   const payload = {
     title: createForm.title,
-    // org_name 先用映射后的中文名称，没有则用原始编码
-    org_name: orgName(createForm.orgCode) || createForm.orgCode || null,
-    target_amount: createForm.targetAmount || null,
-    category: createForm.category || null,
-    short_desc: createForm.shortDesc || null
+    description: createForm.description,
+    target_amount: createForm.targetAmount,
   }
 
   try {
@@ -495,24 +435,19 @@ const handleCreateProject = async () => {
 
 const loadProjects = async () => {
   const res = await apiListProjects({ page: page.value, limit: pageSize.value })
-  // 后端返回格式 { items, total }
-  projects.value = res.items.map((p: any) => ({
+  // 后端返回格式 { projects, total, page, size }
+  projects.value = (res.projects || []).map((p: any) => ({
     id: p.id,
-    name: p.title,
-    organization: p.org_name || '',
-    targetAmount: Number(p.target_amount || 0),
-    raisedAmount: Number(p.raised_amount || 0),
-    status:
-      p.status === 'ONGOING' || p.status === 'PENDING'
-        ? 'inProgress'
-        : p.status === 'FINISHED'
-        ? 'completed'
-        : 'rejected',
-    createdAt: p.created_at?.slice(0, 10) || '',
-    blockchainInfo: p.chain_status === 'FULL' ? '已上链' : '待上链',
-    blockHeight: p.block_height || ''
+    title: p.title,
+    target_amount: Number(p.target_amount ?? 0),
+    current_amount: Number(p.current_amount ?? 0),
+    status: p.status,
+    created_at: p.created_at,
+    blockchain_address: p.blockchain_address,
+    blockchain_tx_hash: p.blockchain_tx_hash,
+    on_chain_at: p.on_chain_at
   }))
-  total.value = res.total
+  total.value = res.total ?? 0
 }
 
 onMounted(() => loadProjects())
@@ -520,35 +455,32 @@ onMounted(() => loadProjects())
 const filters = reactive({
   keyword: '',
   status: '',
-  org: '',
   dateRange: ''
 })
 
 const filteredProjects = computed(() => {
   return projects.value.filter((p) => {
     const nameMatch = filters.keyword
-      ? p.name.toLowerCase().includes(filters.keyword.toLowerCase())
+      ? p.title.toLowerCase().includes(filters.keyword.toLowerCase())
       : true
     const statusMatch = filters.status ? p.status === filters.status : true
-    const orgMatch = filters.org ? p.organization === filters.org : true
-    // 时间筛选先不实现，后面接 date picker 再说
-    return nameMatch && statusMatch && orgMatch
+    return nameMatch && statusMatch
   })
 })
 
 const stats = computed(() => {
-  const inProgress = projects.value.filter((p) => p.status === 'inProgress').length
-  const completed = projects.value.filter((p) => p.status === 'completed').length
-  const waitingChain = projects.value.filter((p) => p.blockchainInfo === '待上链').length
-  const onChain = projects.value.filter((p) => p.blockchainInfo === '已上链').length
+  const inProgress = projects.value.filter((p) => p.status === 'APPROVED').length
+  const completed = projects.value.filter((p) => p.status === 'ON_CHAIN').length
+  const waitingChain = projects.value.filter((p) => !p.blockchain_tx_hash).length
+  const onChain = projects.value.filter((p) => !!p.blockchain_tx_hash).length
   return { inProgress, completed, waitingChain, onChain }
 })
 
 // 分页由后端控制，这里只做占位和事件转发
 
-const handlePageChange = (newPage: number) => {
+const handlePageChange = async (newPage: number) => {
   page.value = newPage
-  // TODO: 后续接入后端接口时，在这里根据 newPage 请求新数据
+  await loadProjects()
 }
 
 const applyFilters = () => {
@@ -558,43 +490,30 @@ const applyFilters = () => {
 const resetFilters = () => {
   filters.keyword = ''
   filters.status = ''
-  filters.org = ''
   filters.dateRange = ''
 }
 
 const progressPercent = (p: Project) => {
-  if (!p.targetAmount) return 0
-  return Math.min(100, Math.round((p.raisedAmount / p.targetAmount) * 100))
+  if (!p.target_amount) return 0
+  return Math.min(100, Math.round((p.current_amount / p.target_amount) * 100))
 }
 
-const statusText = (status: ProjectStatus) => {
-  const map: Record<ProjectStatus, string> = {
-    inProgress: '进行中',
-    completed: '已结束',
-    reviewing: '审核中',
-    rejected: '已驳回'
+const statusText = (status: ProjectStatus | string) => {
+  const map: Record<string, string> = {
+    PENDING: '待审核',
+    APPROVED: '已审核',
+    ON_CHAIN: '已上链'
   }
-  return map[status] || status
+  return map[status] || (status as string)
 }
 
-const statusBadgeClass = (status: ProjectStatus) => {
-  const map: Record<ProjectStatus, string> = {
-    inProgress: 'bg-primary-light text-primary',
-    completed: 'bg-success-light text-success',
-    reviewing: 'bg-warning-light text-warning',
-    rejected: 'bg-danger-light text-danger'
+const statusBadgeClass = (status: ProjectStatus | string) => {
+  const map: Record<string, string> = {
+    PENDING: 'bg-warning-light text-warning',
+    APPROVED: 'bg-primary-light text-primary',
+    ON_CHAIN: 'bg-success-light text-success'
   }
   return map[status] || 'bg-gray-100 text-gray-500'
-}
-
-const orgName = (orgCode: string) => {
-  const map: Record<string, string> = {
-    org1: '爱心公益协会',
-    org2: '阳光慈善基金会',
-    org3: '温暖救助中心',
-    org4: '希望工程办公室'
-  }
-  return map[orgCode] || orgCode
 }
 
 const formatNumber = (num: number) => {

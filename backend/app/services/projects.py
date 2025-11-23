@@ -1,6 +1,6 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from app.db.models.projects import Project, ProjectStatus
 from app.db.models.user import User
 from app.schemas.projects import ProjectCreate, ProjectApprove
@@ -9,105 +9,125 @@ import datetime
 
 
 class ProjectService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.blockchain_service = ProjectBlockchainService(
             db, BlockchainService(db)
         )
 
-    def create_project(self, project_data: ProjectCreate, creator_id: int) -> Optional[Project]:
-        """创建新项目"""
+    async def create_project(self, project_data: ProjectCreate, creator_id: int) -> Optional[Project]:
+        """创建新项目（使用 AsyncSession）"""
         try:
             project = Project(
                 title=project_data.title,
                 description=project_data.description,
                 target_amount=project_data.target_amount,
                 creator_id=creator_id,
-                status=ProjectStatus.PENDING
+                status=ProjectStatus.PENDING.value,
             )
 
             self.db.add(project)
-            self.db.commit()
-            self.db.refresh(project)
+            await self.db.commit()
+            await self.db.refresh(project)
 
             return project
-        except Exception as e:
-            self.db.rollback()
+        except Exception:
+            await self.db.rollback()
             return None
 
-    def approve_project(self, project_id: int, approval_data: ProjectApprove) -> Optional[Project]:
-        """审核项目"""
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+    async def approve_project(self, project_id: int, approval_data: ProjectApprove) -> Optional[Project]:
+        """审核项目：仅允许对 PENDING 状态项目进行通过或拒绝"""
+        result = await self.db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalars().first()
 
         if not project:
             return None
 
-        if project.status != ProjectStatus.PENDING:
+        # 仅在待审核状态下允许审核
+        if project.status != ProjectStatus.PENDING.value:
             return None
 
         if approval_data.approved:
-            project.status = ProjectStatus.APPROVED
+            project.status = ProjectStatus.APPROVED.value
             project.approved_at = datetime.datetime.utcnow()
         else:
-            project.status = ProjectStatus.REJECTED
+            project.status = ProjectStatus.REJECTED.value
+            # 拒绝时可以根据需要记录原因（若模型中有对应字段可在此处赋值）
 
         try:
-            self.db.commit()
-            self.db.refresh(project)
+            await self.db.commit()
+            await self.db.refresh(project)
             return project
-        except Exception as e:
-            self.db.rollback()
+        except Exception:
+            await self.db.rollback()
             return None
 
-    def put_project_on_chain(self, project_id: int) -> Optional[Project]:
-        """将已审核项目上链"""
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+    async def put_project_on_chain(self, project_id: int) -> Optional[Project]:
+        """将已审核项目上链：仅在 APPROVED 状态下允许，成功后状态改为 ON_CHAIN"""
+        result = await self.db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalars().first()
 
         if not project:
             return None
 
-        if project.status != ProjectStatus.APPROVED:
+        # 仅允许对已审核通过的项目执行上链
+        if project.status != ProjectStatus.APPROVED.value:
             return None
 
-        # 创建区块链地址并上链
-        blockchain_address = self.blockchain_service.put_project_on_chain(
-            project.id, project.title, project.target_amount
-        )
+        # 创建区块链地址并上链：由区块链服务负责具体链上记录/挖矿等逻辑
+        try:
+            blockchain_address = self.blockchain_service.put_project_on_chain(
+                project.id,
+                project.title,
+                project.target_amount,
+            )
+        except Exception:
+            # 区块链服务异常，视为上链失败
+            return None
 
-        if blockchain_address:
-            project.blockchain_address = blockchain_address
-            project.status = ProjectStatus.ON_CHAIN
-            project.on_chain_at = datetime.datetime.utcnow()
+        if not blockchain_address:
+            # 未返回有效地址，同样视为上链失败
+            return None
 
-            try:
-                self.db.commit()
-                self.db.refresh(project)
-                return project
-            except Exception as e:
-                self.db.rollback()
-                return None
+        project.blockchain_address = blockchain_address
+        project.status = ProjectStatus.ON_CHAIN.value
+        project.on_chain_at = datetime.datetime.utcnow()
 
-        return None
+        try:
+            await self.db.commit()
+            await self.db.refresh(project)
+            return project
+        except Exception:
+            await self.db.rollback()
+            return None
 
-    def get_project(self, project_id: int) -> Optional[Project]:
+    async def get_project(self, project_id: int) -> Optional[Project]:
         """获取单个项目"""
-        return self.db.query(Project).filter(Project.id == project_id).first()
+        result = await self.db.execute(select(Project).where(Project.id == project_id))
+        return result.scalars().first()
 
-    def get_projects(self, status: Optional[ProjectStatus] = None,
+    async def get_projects(self, status: Optional[ProjectStatus] = None,
                      page: int = 1, size: int = 10) -> tuple[List[Project], int]:
         """获取项目列表"""
-        query = self.db.query(Project)
+        stmt = select(Project)
 
         if status:
-            query = query.filter(Project.status == status)
+            stmt = stmt.where(Project.status == status)
 
-        total = query.count()
-        projects = (
-            query.order_by(Project.created_at.desc())
-            .offset((page - 1) * size)
-            .limit(size)
-            .all()
+        result = await self.db.execute(stmt)
+        items = result.scalars()
+
+        total = len(items)
+
+        # pagination
+        stmt = (
+            stmt.order_by(Project.created_at.desc())
+                .offset((page - 1) * size)
+                .limit(size)
         )
+
+        result = await self.db.execute(stmt)
+        projects = result.scalars().all()
 
         return projects, total
 
