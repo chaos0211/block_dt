@@ -52,11 +52,8 @@
               </td>
               <td class="px-6 py-4">
                 <div>
-                  <div class="flex justify-between text-sm mb-1">
-                    <span>¥{{ formatNumber(project.current_amount) }}</span>
-                    <span class="text-gray-500">
-                      /{{ formatNumber(project.target_amount) }}
-                    </span>
+                  <div class="mb-1 text-sm text-gray-900">
+                    ¥ {{ formatNumber(project.current_amount) }}/{{ formatNumber(project.target_amount) }}
                   </div>
                   <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                     <div

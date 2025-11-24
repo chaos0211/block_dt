@@ -17,6 +17,7 @@ class BlockchainService:
         self.db = db
         self.difficulty = settings.blockchain_difficulty
 
+
     def generate_hash(self, data: str) -> str:
         """生成SHA-256哈希值"""
         return hashlib.sha256(data.encode()).hexdigest()
@@ -27,7 +28,7 @@ class BlockchainService:
         data = f"{from_addr}{to_addr}{amount}{timestamp}"
         return self.generate_hash(data)
 
-    def create_genesis_block(self) -> Block:
+    async def create_genesis_block(self) -> Block:
         """创建创世区块"""
         genesis_block = Block(
             block_number=0,
@@ -42,12 +43,16 @@ class BlockchainService:
         )
 
         self.db.add(genesis_block)
-        self.db.commit()
+        await self.db.commit()
         return genesis_block
 
-    def get_latest_block(self) -> Optional[Block]:
+    async def get_latest_block(self) -> Optional[Block]:
         """获取最新区块"""
-        return self.db.query(Block).order_by(Block.block_number.desc()).first()
+        result = await self.db.execute(
+            Block.__table__.select().order_by(Block.block_number.desc()).limit(1)
+        )
+        row = result.first()
+        return row[0] if row else None
 
     def calculate_merkle_root(self, transactions: List[TransactionData]) -> str:
         """计算交易的默克尔根"""
@@ -69,10 +74,9 @@ class BlockchainService:
 
         return tx_hashes[0]
 
-    def add_transaction_to_pool(self, transaction_data: TransactionData) -> bool:
-        """添加交易到交易池"""
+    async def add_transaction_to_pool(self, transaction_data: TransactionData) -> bool:
+        """添加交易到交易池（async版本）"""
         try:
-            # 计算优先级分数（基于gas费用）
             priority_score = transaction_data.gas_fee
 
             pool_transaction = TransactionPool(
@@ -86,24 +90,28 @@ class BlockchainService:
             )
 
             self.db.add(pool_transaction)
-            self.db.commit()
+            await self.db.commit()
+            print("DEBUG: add_transaction_to_pool success:", transaction_data.transaction_hash)
             return True
         except Exception as e:
-            self.db.rollback()
+            print("ERROR: add_transaction_to_pool failed:", e)
+            await self.db.rollback()
             return False
 
-    def get_pending_transactions(self, limit: int = 10) -> List[TransactionData]:
+    async def get_pending_transactions(self, limit: int = 10) -> List[TransactionData]:
         """获取待处理交易（按优先级排序）"""
-        pool_transactions = (
-            self.db.query(TransactionPool)
+        result = await self.db.execute(
+            TransactionPool.__table__
+            .select()
             .order_by(TransactionPool.priority_score.desc(),
                       TransactionPool.created_at.asc())
             .limit(limit)
-            .all()
         )
+        pool_transactions = result.fetchall()
 
         transactions: List[TransactionData] = []
-        for pool_tx in pool_transactions:
+        for row in pool_transactions:
+            pool_tx = row[0] if isinstance(row, tuple) else row
             # data 中可以包含 tx_type / transaction_type 等字段
             data = json.loads(pool_tx.data) if pool_tx.data else {}
             if not isinstance(data, dict):
@@ -156,8 +164,8 @@ class ProjectBlockchainService:
         address_data = f"project_{project_id}_{int(time.time())}"
         return f"0x{hashlib.sha256(address_data.encode()).hexdigest()[:40]}"
 
-    def put_project_on_chain(self, project_id: int, project_title: str,
-                             target_amount: float) -> Optional[str]:
+    async def put_project_on_chain(self, project_id: int, project_title: str,
+                                   target_amount: float) -> Optional[str]:
         """将项目信息提交到交易池，等待挖矿打包上链。
 
         此处只负责构造 project_creation 类型的创世交易并写入 TransactionPool，
@@ -190,7 +198,7 @@ class ProjectBlockchainService:
             )
 
             # 将创世交易加入交易池，等待后续挖矿
-            added = self.blockchain.add_transaction_to_pool(transaction_data)
+            added = await self.blockchain.add_transaction_to_pool(transaction_data)
             if not added:
                 return None
 
@@ -199,5 +207,5 @@ class ProjectBlockchainService:
             return project_address
         except Exception:
             # 发生异常时回滚数据库会话
-            self.db.rollback()
+            await self.db.rollback()
             return None

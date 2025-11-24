@@ -10,14 +10,15 @@ from app.services.block_chain import BlockchainService
 from app.services.donation import DonationService
 from app.core.config import settings
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+CN_TZ = timezone(timedelta(hours=8))
 
 
 class MiningService:
     def __init__(self, db: AsyncSession):
         # 使用异步会话进行所有数据库操作
         self.db = db
-        # BlockchainService 仅用于纯计算方法（如 calculate_merkle_root、validate_block），
+        # BlockchainService 仅用于纯计算方法（如 calculate_merkle_root、validate_block），，
         # 不再依赖其内部的同步 DB 调用
         self.blockchain = BlockchainService(None)
         self.donation_service = DonationService(db)
@@ -75,7 +76,7 @@ class MiningService:
             if not latest_block:
                 # 创建创世区块
                 genesis_number = 1
-                genesis_timestamp = datetime.utcnow()
+                genesis_timestamp = datetime.now(CN_TZ)
                 header = {
                     "block_number": genesis_number,
                     "previous_hash": "1",
@@ -106,7 +107,7 @@ class MiningService:
             # 3. 准备新区块数据
             new_block_number = latest_block.block_number + 1
             previous_hash = latest_block.block_hash
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(CN_TZ)
 
             block_data = BlockData(
                 block_number=new_block_number,
@@ -159,15 +160,13 @@ class MiningService:
                     gas_fee=tx_data.gas_fee,
                     data=json.dumps(tx_data.data) if tx_data.data else None,
                     is_confirmed=True,
-                    confirmed_at=datetime.utcnow(),
+                    confirmed_at=datetime.now(CN_TZ),
                 )
                 self.db.add(transaction)
 
                 # 确认对应的捐赠交易
                 if tx_data.transaction_type == "donation":
-                    # DonationService 目前仍为同步实现，这里仅保留调用占位；
-                    # 如果后续出现 donation 交易，再将 DonationService 迁移为异步。
-                    self.donation_service.confirm_donation(
+                    await self.donation_service.confirm_donation(
                         tx_data.transaction_hash,
                         block_hash,
                         new_block_number,
@@ -187,7 +186,7 @@ class MiningService:
                             if project:
                                 project.status = "on_chain"
                                 project.blockchain_tx_hash = tx_data.transaction_hash
-                                project.on_chain_at = datetime.utcnow()
+                                project.on_chain_at = datetime.now(CN_TZ)
                                 project.blockchain_address = tx_data.to_address
                     except Exception:
                         # 项目状态更新失败不影响区块落库

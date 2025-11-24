@@ -9,6 +9,9 @@ import datetime
 from app.db.models.block_chain import TransactionPool
 import json
 
+from datetime import datetime, timedelta, timezone
+CN_TZ = timezone(timedelta(hours=8))
+
 
 class ProjectService:
     def __init__(self, db: AsyncSession):
@@ -27,6 +30,7 @@ class ProjectService:
                 creator_id=creator_id,
                 status=ProjectStatus.PENDING.value,
             )
+            project.created_at = datetime.now(CN_TZ)
 
             self.db.add(project)
             await self.db.commit()
@@ -51,7 +55,7 @@ class ProjectService:
 
         if approval_data.approved:
             project.status = ProjectStatus.APPROVED.value
-            project.approved_at = datetime.datetime.utcnow()
+            project.approved_at = datetime.now(CN_TZ)
         else:
             project.status = ProjectStatus.REJECTED.value
             # 拒绝时可以根据需要记录原因（若模型中有对应字段可在此处赋值）
@@ -97,7 +101,7 @@ class ProjectService:
 
         try:
             # 调用区块链服务：生成项目地址（如有需要）并构造 project_creation 交易写入交易池
-            blockchain_address = self.blockchain_service.put_project_on_chain(
+            blockchain_address = await self.blockchain_service.put_project_on_chain(
                 project.id,
                 project.title,
                 project.target_amount,

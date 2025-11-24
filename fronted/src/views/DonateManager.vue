@@ -578,8 +578,16 @@ const handleOnChain = async () => {
     if (updated) {
       currentProject.value = { ...updated }
     }
+    // 提交成功提示，并关闭详情窗口
+    window.alert('申请提交，请等待审核')
+    showDetailModal.value = false
+    currentProject.value = null
   } catch (e) {
     console.error('[OnChain] failed', e)
+    // 提交失败提示，并关闭详情窗口
+    window.alert('申请入池失败')
+    showDetailModal.value = false
+    currentProject.value = null
   }
 }
 </script>
