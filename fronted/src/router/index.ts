@@ -16,8 +16,9 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: "/cockpit", component: Cockpit },
       { path: "/ranking", component: RankingList },
-      { path: '/DonateManager', component: () => import('@/views/DonateManager.vue'), meta: { title: '应用对比' } },
+      { path: '/DonateManager', component: () => import('@/views/DonateManager.vue'), meta: { title: '捐赠项目管理' } },
       { path: "/predict", component: () => import("@/views/Predict.vue"), meta: { title: "数据预测" } },
+      { path: "/transactionPool", component: () => import("@/views/TransactionPool.vue"), meta: { title: "交易池管理" } },
       { path: "/BlockchainManager", component: () => import("@/views/BlockchainManager.vue"), meta: { title: "区块链管理" } },
       { path: "/SystemManager", component: () => import("@/views/SystemManager.vue"), meta: { title: "系统管理" } },
 

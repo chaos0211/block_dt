@@ -6,6 +6,8 @@ from app.db.models.user import User
 from app.schemas.projects import ProjectCreate, ProjectApprove
 from app.services.block_chain import ProjectBlockchainService, BlockchainService
 import datetime
+from app.db.models.block_chain import TransactionPool
+import json
 
 
 class ProjectService:
@@ -63,35 +65,54 @@ class ProjectService:
             return None
 
     async def put_project_on_chain(self, project_id: int) -> Optional[Project]:
-        """将已审核项目上链：仅在 APPROVED 状态下允许，成功后状态改为 ON_CHAIN"""
+        """将已审核项目提交上链：仅在 APPROVED 状态下允许，将创世交易加入交易池。
+
+        注意：此处仅负责构造并提交 project_creation 交易到交易池，
+        真正的区块打包与状态更新（ON_CHAIN）应在挖矿逻辑完成后进行。
+        """
         result = await self.db.execute(select(Project).where(Project.id == project_id))
         project = result.scalars().first()
 
         if not project:
             return None
 
-        # 仅允许对已审核通过的项目执行上链
-        if project.status != ProjectStatus.APPROVED.value:
+        # 仅允许对已审核通过的项目执行上链请求（大小写兼容）
+        status_value = (project.status or "").lower()
+        if status_value != ProjectStatus.APPROVED.value.lower():
             return None
 
-        # 创建区块链地址并上链：由区块链服务负责具体链上记录/挖矿等逻辑
+        # 防止重复提交：若该项目已存在未打包的 project_creation 交易，则直接返回项目
+        existing_stmt = select(TransactionPool).where(TransactionPool.data.isnot(None))
+        existing_result = await self.db.execute(existing_stmt)
+        for pool_tx in existing_result.scalars().all():
+            try:
+                data = json.loads(pool_tx.data) if pool_tx.data else {}
+            except Exception:
+                data = {}
+            if not isinstance(data, dict):
+                continue
+            if data.get("tx_type") == "project_creation" and data.get("project_id") == project.id:
+                # 已在交易池中，无需再次创建
+                return project
+
         try:
+            # 调用区块链服务：生成项目地址（如有需要）并构造 project_creation 交易写入交易池
             blockchain_address = self.blockchain_service.put_project_on_chain(
                 project.id,
                 project.title,
                 project.target_amount,
             )
         except Exception:
-            # 区块链服务异常，视为上链失败
+            # 区块链服务异常，视为上链请求失败
             return None
 
         if not blockchain_address:
-            # 未返回有效地址，同样视为上链失败
+            # 未返回有效地址，同样视为上链请求失败
             return None
 
+        # 仅更新项目的链上地址，不在此处修改状态和 on_chain_at，
+        # 避免在未真正打包进区块前就认为已上链
         project.blockchain_address = blockchain_address
-        project.status = ProjectStatus.ON_CHAIN.value
-        project.on_chain_at = datetime.datetime.utcnow()
 
         try:
             await self.db.commit()
@@ -114,10 +135,9 @@ class ProjectService:
         if status:
             stmt = stmt.where(Project.status == status)
 
-        result = await self.db.execute(stmt)
-        items = result.scalars()
-
-        total = len(items)
+        total_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await self.db.execute(total_stmt)
+        total = total_result.scalar_one()
 
         # pagination
         stmt = (

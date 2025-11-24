@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white rounded-xl shadow-card p-4 md:p-6">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-semibold text-gray-800">项目列表</h3>
+      <h3 class="font-semibold text-gray-800">{{ titleText }}</h3>
       <span class="text-xs text-gray-400">共 {{ total }} 个项目</span>
     </div>
 
@@ -9,26 +9,28 @@
       <table class="w-full">
         <thead>
           <tr class="bg-gray-50 text-left">
-            <th class="px-6 py-4 text-sm font-semibold text-gray-700">
-              项目名称
-            </th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-700">
-              已筹金额 / 目标金额
-            </th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-700">
-              项目状态
-            </th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-700">
-              创建时间
-            </th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-700">
-              链上信息
-            </th>
-            <th
-              class="px-6 py-4 text-sm font-semibold text-gray-700 text-right"
-            >
-              操作
-            </th>
+            <slot name="header">
+              <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                项目名称
+              </th>
+              <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                已筹金额 / 目标金额
+              </th>
+              <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                项目状态
+              </th>
+              <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                创建时间
+              </th>
+              <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                链上信息
+              </th>
+              <th
+                class="px-6 py-4 text-sm font-semibold text-gray-700 text-right"
+              >
+                操作
+              </th>
+            </slot>
           </tr>
         </thead>
         <tbody>
@@ -37,72 +39,74 @@
             :key="project.id"
             class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
           >
-            <td class="px-6 py-4">
-              <div class="flex items-center">
-                <div
-                  class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 mr-3 text-xs"
-                >
-                  图
-                </div>
-                <span class="font-medium">{{ project.title }}</span>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-              <div>
-                <div class="flex justify-between text-sm mb-1">
-                  <span>¥{{ formatNumber(project.current_amount) }}</span>
-                  <span class="text-gray-500">
-                    /{{ formatNumber(project.target_amount) }}
-                  </span>
-                </div>
-                <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <slot name="row" :project="project">
+              <td class="px-6 py-4">
+                <div class="flex items-center">
                   <div
-                    class="h-full bg-primary transition-all duration-500"
-                    :style="{ width: progressPercent(project) + '%' }"
-                  />
+                    class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 mr-3 text-xs"
+                  >
+                    图
+                  </div>
+                  <span class="font-medium">{{ project.title }}</span>
                 </div>
-                <div class="text-right text-xs text-gray-500 mt-1">
-                  {{ progressPercent(project) }}%
+              </td>
+              <td class="px-6 py-4">
+                <div>
+                  <div class="flex justify-between text-sm mb-1">
+                    <span>¥{{ formatNumber(project.current_amount) }}</span>
+                    <span class="text-gray-500">
+                      /{{ formatNumber(project.target_amount) }}
+                    </span>
+                  </div>
+                  <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      class="h-full bg-primary transition-all duration-500"
+                      :style="{ width: progressPercent(project) + '%' }"
+                    />
+                  </div>
+                  <div class="text-right text-xs text-gray-500 mt-1">
+                    {{ progressPercent(project) }}%
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                :class="statusBadgeClass(project.status)"
-              >
-                {{ statusText(project.status) }}
-              </span>
-            </td>
-            <td class="px-6 py-4 text-gray-500">
-              {{ project.created_at }}
-            </td>
-            <td class="px-6 py-4">
-              <div>
-                <div class="text-sm">{{ project.blockchain_tx_hash ? '已上链' : '待上链' }}</div>
-                <div v-if="project.blockchain_tx_hash" class="text-xs text-gray-500">Tx: {{ project.blockchain_tx_hash.slice(0, 10) }}...</div>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-right">
-              <div class="flex items-center justify-end space-x-2 text-sm">
-                <button
-                  class="text-gray-500 hover:text-primary transition-colors"
-                  @click="emit('view', project)"
+              </td>
+              <td class="px-6 py-4">
+                <span
+                  class="px-2 py-1 rounded-full text-xs font-medium"
+                  :class="statusBadgeClass(project.status)"
                 >
-                  <i class="fas fa-eye" />
-                </button>
-                <button
-                  class="text-gray-500 hover:text-primary transition-colors"
-                >
-                  <i class="fas fa-edit" />
-                </button>
-                <button
-                  class="text-gray-500 hover:text-danger transition-colors"
-                >
-                  <i class="fas fa-trash-alt" />
-                </button>
-              </div>
-            </td>
+                  {{ statusText(project.status) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-gray-500">
+                {{ project.created_at }}
+              </td>
+              <td class="px-6 py-4">
+                <div>
+                  <div class="text-sm">{{ project.blockchain_tx_hash ? '已上链' : '待上链' }}</div>
+                  <div v-if="project.blockchain_tx_hash" class="text-xs text-gray-500">Tx: {{ project.blockchain_tx_hash.slice(0, 10) }}...</div>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end space-x-2 text-sm">
+                  <button
+                    class="text-gray-500 hover:text-primary transition-colors"
+                    @click="emit('view', project)"
+                  >
+                    <i class="fas fa-eye" />
+                  </button>
+                  <button
+                    class="text-gray-500 hover:text-primary transition-colors"
+                  >
+                    <i class="fas fa-edit" />
+                  </button>
+                  <button
+                    class="text-gray-500 hover:text-danger transition-colors"
+                  >
+                    <i class="fas fa-trash-alt" />
+                  </button>
+                </div>
+              </td>
+            </slot>
           </tr>
 
           <tr v-if="!projects || !projects.length">
@@ -179,12 +183,14 @@ const props = withDefaults(
     total: number
     page?: number
     pageSize?: number
+    titleText?: string
   }>(),
   {
     projects: () => [],
     total: 0,
     page: 1,
-    pageSize: 5
+    pageSize: 5,
+    titleText: '项目列表'
   }
 )
 

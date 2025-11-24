@@ -44,8 +44,8 @@
               </RouterLink>
             </li>
             <li>
-              <RouterLink to="/blank" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
-                <i class="fas fa-hand-holding-heart w-5 h-5 mr-3"></i> 项目参与
+              <RouterLink to="/transactionPool" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                <i class="fas fa-hand-holding-heart w-5 h-5 mr-3"></i> 交易池管理
               </RouterLink>
             </li>
             <li>

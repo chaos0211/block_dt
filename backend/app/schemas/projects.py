@@ -23,7 +23,7 @@ class ProjectCreate(ProjectBase):
 class ProjectApprove(BaseModel):
     approved: bool
     rejection_reason: Optional[str] = None
-    approved_at: datetime
+    approved_at: Optional[datetime] = None
 
 
 class ProjectResponse(ProjectBase):

@@ -249,15 +249,21 @@
                 v-model.number="donationAmount"
                 type="number"
                 min="1"
-                class="w-32 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm"
+                :disabled="currentProject.status !== 'ON_CHAIN'"
+                class="w-32 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
               />
               <span class="text-xs text-gray-400">最低 1 元起捐</span>
             </div>
           </div>
           <div>
-            <div class="text-xs text-gray-500 mb-1">链上状态</div>
-            <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" :class="statusBadgeClass(currentProject.status)">
-              {{ currentProject.blockchain_tx_hash ? '已上链' : '待上链' }} · {{ statusText(currentProject.status) }}
+            <div class="text-xs text-gray-500 mb-1">状态</div>
+            <div class="flex items-center justify-between gap-3">
+              <div
+                class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                :class="statusBadgeClass(currentProject.status)"
+              >
+                {{ statusText(currentProject.status) }}
+              </div>
             </div>
           </div>
         </div>
@@ -269,11 +275,32 @@
           >
             关闭
           </button>
+
+          <!-- 状态为 ON_CHAIN 时显示捐赠按钮 -->
           <button
+            v-if="currentProject && currentProject.status === 'ON_CHAIN'"
             class="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 text-sm"
             @click="openDonateConfirm"
           >
             捐赠
+          </button>
+
+          <!-- 状态为 APPROVED 时显示提交上链按钮（入池） -->
+          <button
+            v-else-if="currentProject && currentProject.status === 'APPROVED'"
+            class="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
+            @click="handleOnChain"
+          >
+            提交上链
+          </button>
+
+          <!-- 状态为 PENDING 时显示审核按钮（在关闭右侧），用于直接审核 -->
+          <button
+            v-else-if="currentProject && currentProject.status === 'PENDING'"
+            class="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
+            @click="handleAuditApprove"
+          >
+            审核
           </button>
         </div>
       </div>
@@ -312,7 +339,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted } from 'vue'
-import { apiListProjects, apiCreateProject } from '@/api/projects'
+import { apiListProjects, apiCreateProject, apiApproveProject, apiPutProjectOnChain } from '@/api/projects'
 import StatsCards from '@/components/charts/StatsCards.vue'
 import ProjectList from '@/components/charts/ProjectList.vue'
 import { apiCreateDonation, apiEnqueueDonation } from '@/api/donate'
@@ -441,7 +468,7 @@ const loadProjects = async () => {
     title: p.title,
     target_amount: Number(p.target_amount ?? 0),
     current_amount: Number(p.current_amount ?? 0),
-    status: p.status,
+    status: (p.status || '').toString().toUpperCase(),
     created_at: p.created_at,
     blockchain_address: p.blockchain_address,
     blockchain_tx_hash: p.blockchain_tx_hash,
@@ -501,7 +528,7 @@ const progressPercent = (p: Project) => {
 const statusText = (status: ProjectStatus | string) => {
   const map: Record<string, string> = {
     PENDING: '待审核',
-    APPROVED: '已审核',
+    APPROVED: '待上链',
     ON_CHAIN: '已上链'
   }
   return map[status] || (status as string)
@@ -516,10 +543,43 @@ const statusBadgeClass = (status: ProjectStatus | string) => {
   return map[status] || 'bg-gray-100 text-gray-500'
 }
 
-const formatNumber = (num: number) => {
-  return num.toLocaleString('zh-CN', {
+const formatNumber = (num: number | null | undefined) => {
+  const n = Number(num ?? 0)
+  if (Number.isNaN(n)) return '0'
+  return n.toLocaleString('zh-CN', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   })
+}
+
+const handleAuditApprove = async () => {
+  if (!currentProject.value) return
+  try {
+    await apiApproveProject(currentProject.value.id, {
+      approved: true,
+      rejection_reason: null
+    })
+    await loadProjects()
+    const updated = projects.value.find(p => p.id === currentProject.value!.id)
+    if (updated) {
+      currentProject.value = { ...updated }
+    }
+  } catch (e) {
+    console.error('[AuditProject] failed', e)
+  }
+}
+
+const handleOnChain = async () => {
+  if (!currentProject.value) return
+  try {
+    await apiPutProjectOnChain(currentProject.value.id)
+    await loadProjects()
+    const updated = projects.value.find(p => p.id === currentProject.value!.id)
+    if (updated) {
+      currentProject.value = { ...updated }
+    }
+  } catch (e) {
+    console.error('[OnChain] failed', e)
+  }
 }
 </script>

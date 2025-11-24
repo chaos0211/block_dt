@@ -102,15 +102,21 @@ class BlockchainService:
             .all()
         )
 
-        transactions = []
+        transactions: List[TransactionData] = []
         for pool_tx in pool_transactions:
-            data = json.loads(pool_tx.data) if pool_tx.data else None
+            # data 中可以包含 tx_type / transaction_type 等字段
+            data = json.loads(pool_tx.data) if pool_tx.data else {}
+            if not isinstance(data, dict):
+                data = {}
+
+            tx_type = data.get("tx_type") or data.get("transaction_type") or "donation"
+
             transactions.append(TransactionData(
                 transaction_hash=pool_tx.transaction_hash,
                 from_address=pool_tx.from_address,
                 to_address=pool_tx.to_address,
                 amount=pool_tx.amount,
-                transaction_type="donation",  # 默认类型
+                transaction_type=tx_type,
                 gas_fee=pool_tx.gas_fee,
                 data=data
             ))
@@ -152,11 +158,24 @@ class ProjectBlockchainService:
 
     def put_project_on_chain(self, project_id: int, project_title: str,
                              target_amount: float) -> Optional[str]:
-        """将项目信息上链"""
+        """将项目信息提交到交易池，等待挖矿打包上链。
+
+        此处只负责构造 project_creation 类型的创世交易并写入 TransactionPool，
+        不直接创建已确认的 Transaction 记录，也不写入区块。
+        """
         try:
-            # 创建项目上链交易
+            # 为项目生成链上地址
             project_address = self.create_project_address(project_id)
             timestamp = str(int(time.time()))
+
+            # 在 data 中显式带上 tx_type，方便后续从交易池解析
+            data: Dict[str, Any] = {
+                "tx_type": "project_creation",
+                "project_id": project_id,
+                "title": project_title,
+                "target_amount": target_amount,
+                "timestamp": timestamp,
+            }
 
             transaction_data = TransactionData(
                 transaction_hash=self.blockchain.generate_transaction_hash(
@@ -167,31 +186,18 @@ class ProjectBlockchainService:
                 amount=0.0,
                 transaction_type="project_creation",
                 gas_fee=0.0,
-                data={
-                    "project_id": project_id,
-                    "title": project_title,
-                    "target_amount": target_amount,
-                    "timestamp": timestamp
-                }
+                data=data,
             )
 
-            # 直接创建交易记录（不消耗gas费用）
-            transaction = Transaction(
-                transaction_hash=transaction_data.transaction_hash,
-                from_address=transaction_data.from_address,
-                to_address=transaction_data.to_address,
-                amount=transaction_data.amount,
-                transaction_type=transaction_data.transaction_type,
-                gas_fee=0.0,
-                data=json.dumps(transaction_data.data),
-                is_confirmed=True,
-                confirmed_at=func.now()
-            )
+            # 将创世交易加入交易池，等待后续挖矿
+            added = self.blockchain.add_transaction_to_pool(transaction_data)
+            if not added:
+                return None
 
-            self.db.add(transaction)
-            self.db.commit()
-
+            # 此处不修改 Project 状态，也不在此创建 Transaction；
+            # 由后续挖矿逻辑负责从交易池取出该交易，打包进区块并写入 transactions 表。
             return project_address
-        except Exception as e:
+        except Exception:
+            # 发生异常时回滚数据库会话
             self.db.rollback()
             return None
