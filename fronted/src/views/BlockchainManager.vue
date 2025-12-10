@@ -86,7 +86,7 @@
 
         <ProjectList
           :projects="projects"
-          :total="projects.length"
+          :total="totalProjects"
           :page="page"
           :page-size="pageSize"
           user-role="admin"
@@ -115,56 +115,32 @@
             <div class="flex justify-between">
               <span class="text-gray-500">最近出块时间</span>
               <span class="font-medium">
-                <!-- TODO: 后端传递最近出块时间 -->
-                暂无数据
+                {{
+                  latestBlock && latestBlock.timestamp
+                    ? latestBlock.timestamp.replace('T', ' ').slice(0, 19)
+                    : '暂无数据'
+                }}
               </span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">最近区块哈希</span>
               <span class="font-mono text-xs text-gray-600 truncate max-w-[160px]">
-                <!-- TODO: 后端传递区块哈希 -->
-                无
+                {{
+                  latestBlock && latestBlock.block_hash
+                    ? `${latestBlock.block_hash.slice(0, 10)}...${latestBlock.block_hash.slice(-6)}`
+                    : '无'
+                }}
               </span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">当前交易池大小</span>
               <span class="font-medium">
-                <!-- TODO: 后端传递 tx pool 大小 -->
-                0
+                {{ pendingPoolSize || 0 }}
               </span>
             </div>
           </div>
         </div>
 
-        <!-- 节点状态 -->
-        <div class="bg-white rounded-xl shadow-card p-4 md:p-5">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold text-gray-800">节点状态</h3>
-            <span class="text-xs text-gray-400">
-              后续由后端返回真实节点列表
-            </span>
-          </div>
-
-          <ul class="space-y-2 text-sm">
-            <li
-              class="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50"
-            >
-              <div>
-                <p class="font-medium text-gray-800">
-                  节点列表占位
-                </p>
-                <p class="text-xs text-gray-500">
-                  等后端返回节点信息后再填充
-                </p>
-              </div>
-              <span
-                class="px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-600"
-              >
-                未连接
-              </span>
-            </li>
-          </ul>
-        </div>
 
         <!-- 链配置信息 -->
         <div class="bg-white rounded-xl shadow-card p-4 md:p-5">
@@ -176,14 +152,13 @@
             <div class="flex justify-between">
               <span class="text-gray-500">网络类型</span>
               <span class="font-medium">
-                私有链（本地内网）
+                私有链
               </span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">共识机制</span>
               <span class="font-medium">
-                <!-- TODO: 后端传具体名称，如 PoA / Raft / PBFT -->
-                待配置
+                PoW
               </span>
             </div>
             <div class="flex justify-between">
@@ -195,15 +170,13 @@
             <div class="flex justify-between">
               <span class="text-gray-500">区块生成间隔</span>
               <span class="font-medium">
-                <!-- TODO: 由后端传递，单位秒 -->
-                待配置
+                15 分钟
               </span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">当前网络 ID</span>
               <span class="font-mono text-xs text-gray-700">
-                <!-- TODO: 后端传递 chainId / networkId -->
-                未设置
+                donation-chain-local-1
               </span>
             </div>
           </div>
@@ -218,19 +191,49 @@ import { ref, onMounted } from 'vue'
 import StatsCards from '@/components/charts/StatsCards.vue'
 import ProjectList from '@/components/charts/ProjectList.vue'
 import { getChainInfo, minePendingBlocks } from '@/api/Blockchain'
+import { apiListProjects } from '@/api/projects'
 
-// TODO: 接入后端接口时，用真实接口替换下面这些占位数据
-
-// 已上链 / 待上链项目列表（现在先给空数组，后端接入后再填）
+// 已上链 / 待上链项目列表
 const projects = ref<any[]>([])
+const totalProjects = ref(0)
 
-// 分页占位（后端控制页码时，这里只负责把事件传出去）
+const latestBlock = ref<any | null>(null)
+const pendingPoolSize = ref(0)
+
+
+// 分页（这里只做简单前端分页控制，实际数据由后端返回）
 const page = ref(1)
 const pageSize = ref(5)
 
+const loadProjectRecords = async () => {
+  try {
+    const data = await apiListProjects({
+      page: page.value,
+      limit: pageSize.value,
+      // 仅展示已上链 / 待上链项目，如果后端支持 status 过滤，可根据需要调整
+      // 这里优先展示已上链项目
+      status: 'on_chain'
+    })
+
+    // 兼容不同返回结构：优先 projects，其次 items，最后直接使用 data 作为数组
+    const list =
+      (data && (data.projects || data.items)) ||
+      (Array.isArray(data) ? data : [])
+
+    projects.value = list
+    // 如果后端返回 total，使用它；否则退化为当前列表长度
+    totalProjects.value = (data && (data.total as number)) || list.length
+  } catch (e) {
+    console.error('[BlockchainManager] loadProjectRecords error', e)
+    projects.value = []
+    totalProjects.value = 0
+  }
+}
+
 const handlePageChange = (newPage: number) => {
   page.value = newPage
-  // TODO: 接入后端后，在这里根据 newPage 请求区块链相关项目数据
+  // 翻页时重新拉取已上链项目
+  loadProjectRecords()
 }
 
 // 区块链整体统计信息（从后端 /api/v1/chain/info 获取）
@@ -261,7 +264,11 @@ const loadChainInfo = async () => {
     chainStats.value.nodeOnline = 1
 
     // 同步状态：根据链校验结果给出简单文案
-    chainStats.value.syncStatus = data.chain_validity ? '运行正常' : '链异常'
+    chainStats.value.syncStatus = (data as any).chain_valid ? '运行正常' : '链异常'
+
+    // 记录最新区块与交易池大小
+    latestBlock.value = (data as any).latest_block || null
+    pendingPoolSize.value = (data as any).pending_pool_size ?? 0
   } catch (e) {
     console.error('[BlockchainManager] loadChainInfo error', e)
     chainError.value = '区块链状态获取失败'
@@ -285,5 +292,6 @@ const handleSyncChain = async () => {
 
 onMounted(() => {
   loadChainInfo()
+  loadProjectRecords()
 })
 </script>

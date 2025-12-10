@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <!-- 页面标题与操作按钮 -->
+    <!-- 页面标题 -->
     <div
       class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0"
     >
@@ -9,16 +9,6 @@
           首页总览
         </h2>
         <p class="text-gray-500 mt-1">查看平台捐赠概况和区块链状态</p>
-      </div>
-      <div class="flex space-x-3">
-        <button class="btn-secondary text-sm flex items-center">
-          <i class="fas fa-download mr-2"></i>
-          <span>导出报告</span>
-        </button>
-        <button class="btn-primary text-sm flex items-center">
-          <i class="fas fa-plus mr-2"></i>
-          <span>发起捐赠</span>
-        </button>
       </div>
     </div>
 
@@ -107,8 +97,8 @@
           </div>
         </div>
 
-  <CategoryPie />
-</div>
+        <CategoryPie />
+      </div>
     </div>
 
     <!-- 双列表区：最新捐赠记录 & 最新区块 -->
@@ -117,116 +107,46 @@
       <div class="bg-white rounded-xl shadow-card p-6">
         <div class="flex items-center justify-between mb-6">
           <h3 class="font-semibold text-gray-800">最新捐赠记录</h3>
-          <a href="javascript:void(0);" class="text-primary text-sm hover:underline">
-            查看全部
-          </a>
+
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   时间
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   项目名称
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   捐赠人
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   金额
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   区块哈希
                 </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 14:32
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  山区教育支持计划
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  匿名捐赠者
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-success">
-                  ¥5,000
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  0x7f3d2a...
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 13:45
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  留守儿童关爱
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  李华
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-success">
-                  ¥1,000
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  0x9e2c5b...
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 11:20
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  乡村医疗建设
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  匿名捐赠者
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-success">
-                  ¥2,500
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  0x3a7f1d...
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 10:05
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  环保植树计划
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  王芳
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-success">
-                  ¥300
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  0x8b4e6c...
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 09:18
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  山区教育支持计划
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  张伟
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-success">
-                  ¥1,200
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  0x5d1f3e...
-                </td>
+              <tr v-for="item in latestDonations" :key="item.transaction_hash" class="hover:bg-gray-50 transition-colors duration-150">
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.time }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{{ item.project_name }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{{ item.donor }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-success">¥{{ item.amount }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.block_hash }}</td>
               </tr>
             </tbody>
           </table>
@@ -237,98 +157,40 @@
       <div class="bg-white rounded-xl shadow-card p-6">
         <div class="flex items-center justify-between mb-6">
           <h3 class="font-semibold text-gray-800">最新区块</h3>
-          <a href="javascript:void(0);" class="text-primary text-sm hover:underline">
-            查看全部
-          </a>
+
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   区块高度
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   时间
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   哈希
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   捐赠笔数
                 </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  12,584
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 14:32
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  0x7f3d2a8b...
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  3
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  12,583
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 13:45
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  0x9e2c5b7d...
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  1
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  12,582
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 11:20
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  0x3a7f1d9c...
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  2
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  12,581
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 10:05
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  0x8b4e6c3d...
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  1
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                  12,580
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2023-06-15 09:18
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  0x5d1f3e7a...
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                  4
-                </td>
+              <tr v-for="b in latestBlocks" :key="b.block_hash" class="hover:bg-gray-50 transition-colors duration-150">
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{{ b.block_number }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ b.time }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{{ b.block_hash }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{{ b.transaction_count }}</td>
               </tr>
             </tbody>
           </table>
@@ -339,14 +201,151 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import TrendChart from '@/components/charts/DonationTrendSimple.vue'
 import CategoryPie from '@/components/charts/CategoryPie.vue'
 import StatsCards from '@/components/charts/StatsCards.vue'
+import { getChainInfo, getBlocks } from '@/api/Blockchain'
+import { apiListProjects } from '@/api/projects'
+import { apiListRecentDonations } from '@/api/donate'
 
-// 这四个值以后由后端接口赋值，现在为 null，会在组件里显示为 0
+// 这四个值由后端接口赋值（为空时 StatsCards 组件内部会显示为 0）
 const totalAmount = ref<number | null>(null)
 const todayAmount = ref<number | null>(null)
 const activeProjects = ref<number | null>(null)
 const blockHeight = ref<number | null>(null)
+
+const latestDonations = ref<any[]>([])
+const latestBlocks = ref<any[]>([])
+
+/**
+ * 加载首页仪表盘统计数据：
+ * - 区块高度：来自 /api/v1/blockchain/info
+ * - 进行中项目数：来自 /api/v1/projects（按状态过滤）
+ * - 累计捐赠总额：汇总所有项目 current_amount
+ * - 今日捐赠金额：当前版本暂用 0，占位，后续可接入捐赠统计 API
+ */
+const loadDashboardData = async () => {
+  try {
+    // 并行请求链信息和项目列表
+    const [chainInfo, projectResp] = await Promise.all([
+      getChainInfo(),
+      apiListProjects({ page: 1, limit: 100 })
+    ])
+
+    // 区块高度
+    blockHeight.value = (chainInfo as any)?.height ?? 0
+
+    // 解析项目列表返回结构：优先 projects，其次 items，再退化为数组
+    const list =
+      (projectResp as any)?.projects ??
+      (projectResp as any)?.items ??
+      (Array.isArray(projectResp) ? projectResp : [])
+
+    // 累计捐赠总额：所有项目 current_amount 之和
+    totalAmount.value = list.reduce(
+      (sum: number, p: any) => sum + (p.current_amount || 0),
+      0
+    )
+
+    // 进行中的公益项目：已上链或已审核状态
+    activeProjects.value = list.filter(
+      (p: any) => p.status === 'on_chain' || p.status === 'approved'
+    ).length
+
+    // 今日捐赠金额：当前版本先置为 0，后续再接入捐赠统计 API
+    todayAmount.value = 0
+
+  } catch (err) {
+    console.error('[Cockpit] loadDashboardData error', err)
+    // 出错时保持默认值（0）
+    totalAmount.value = totalAmount.value ?? 0
+    todayAmount.value = todayAmount.value ?? 0
+    activeProjects.value = activeProjects.value ?? 0
+    blockHeight.value = blockHeight.value ?? 0
+  }
+}
+
+const loadLatestDonations = async () => {
+  try {
+    // 通过封装好的 axios 实例调用后端 8000 端口
+    const data: any = await apiListRecentDonations({ page: 1, limit: 5 })
+
+    const list =
+      (Array.isArray(data) ? data : null) ||
+      data?.donations ||
+      data?.items ||
+      []
+
+    latestDonations.value = list.map((d: any) => {
+      // 时间：优先使用 confirmed_at，否则用 created_at
+      const created = d.confirmed_at || d.created_at || ''
+      const time = created ? String(created).replace('T', ' ').slice(0, 19) : ''
+
+      // 项目名称：当前接口只返回 project_id，这里用「项目 #ID」占位
+      const projectName = `${d.project_name ?? '-'}`
+
+      // 捐赠人：匿名 or "用户 #ID"
+      const donorName = d.is_anonymous
+        ? '匿名捐赠者'
+        : (d.donor_name ?? `用户 #${d.donor_id ?? '-'}`)
+
+      // 区块哈希：如果已上链，则截断展示；否则显示“未上链”
+      const blockHashRaw = d.block_hash || d.transaction_hash || ''
+      const blockHash = blockHashRaw
+        ? `${String(blockHashRaw).slice(0, 10)}...${String(blockHashRaw).slice(-6)}`
+        : '未上链'
+
+      return {
+        transaction_hash: d.transaction_hash || d.id || `${time}-${projectName}`,
+        time,
+        project_name: projectName,
+        donor: donorName,
+        amount: d.amount || 0,
+        block_hash: blockHash
+      }
+    })
+  } catch (err) {
+    console.error('[Cockpit] loadLatestDonations error', err)
+    latestDonations.value = []
+  }
+}
+
+const loadLatestBlocks = async () => {
+  try {
+    // 通过 Blockchain.ts 中的封装函数走同一个 axios / baseURL
+    const data: any = await getBlocks({ page: 1, limit: 5 })
+
+    const list =
+      (Array.isArray(data) ? data : null) ||
+      data?.blocks ||
+      data?.items ||
+      []
+
+    latestBlocks.value = list.map((b: any) => {
+      const ts = b.timestamp || b.created_at || ''
+      const time = ts ? String(ts).replace('T', ' ').slice(0, 19) : ''
+
+      const hash = b.block_hash || b.hash || ''
+
+      return {
+        block_number: b.block_number ?? b.height ?? 0,
+        time,
+        block_hash: hash
+          ? `${String(hash).slice(0, 10)}...${String(hash).slice(-6)}`
+          : '未知',
+        transaction_count: b.transaction_count ?? b.transactions_count ?? 0
+      }
+    })
+  } catch (err) {
+    console.error('[Cockpit] loadLatestBlocks error', err)
+    latestBlocks.value = []
+  }
+}
+
+onMounted(() => {
+  loadDashboardData()
+  loadLatestDonations()
+  loadLatestBlocks()
+})
 </script>

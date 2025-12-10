@@ -140,6 +140,81 @@ async def get_mining_statistics(
     }
 
 
+@router.get("/chain-info")
+async def get_chain_info(
+        db: AsyncSession = Depends(get_db)
+):
+    """
+    获取区块链综合信息：
+    - total_blocks: 区块总数
+    - height: 当前区块高度（total_blocks - 1，若有创世块）
+    - total_transactions: 链上交易总数
+    - pending_pool_size: 交易池中待处理交易数量
+    - latest_block: 最新区块的关键信息
+    - chain_valid: 简单链校验结果（当前版本始终返回 True）
+    """
+    from app.db.models.block_chain import Block, Transaction, TransactionPool
+
+    # 区块总数
+    stmt_block_count = select(func.count()).select_from(Block)
+    result_block_count = await db.execute(stmt_block_count)
+    total_blocks = result_block_count.scalar() or 0
+
+    # 交易总数
+    stmt_tx_count = select(func.count()).select_from(Transaction)
+    result_tx_count = await db.execute(stmt_tx_count)
+    total_transactions = result_tx_count.scalar() or 0
+
+    # 交易池待处理数量
+    stmt_pool_count = select(func.count()).select_from(TransactionPool)
+    result_pool_count = await db.execute(stmt_pool_count)
+    pending_pool_size = result_pool_count.scalar() or 0
+
+    # 最新区块信息
+    stmt_last_block = select(Block).order_by(Block.block_number.desc()).limit(1)
+    result_last_block = await db.execute(stmt_last_block)
+    last_block = result_last_block.scalars().first()
+
+    latest_block = None
+    if last_block:
+        latest_block = {
+            "block_number": last_block.block_number,
+            "block_hash": last_block.block_hash,
+            "previous_hash": last_block.previous_hash,
+            "transactions_count": last_block.transaction_count,
+            "timestamp": last_block.timestamp.isoformat() if last_block.timestamp else None,
+            "miner_address": last_block.miner_address,
+        }
+
+    # 当前高度：如果有创世块（通常 block_number 从 0 开始），高度为 total_blocks - 1，否则为 0
+    if total_blocks > 0:
+        height = total_blocks - 1
+    else:
+        height = 0
+
+    # 当前版本不做复杂链校验，先返回 True，后续可扩展为逐块校验 previous_hash / merkle_root 等
+    chain_valid = True
+
+    return {
+        "total_blocks": total_blocks,
+        "height": height,
+        "total_transactions": total_transactions,
+        "pending_pool_size": pending_pool_size,
+        "latest_block": latest_block,
+        "chain_valid": chain_valid,
+    }
+
+
+@router.get("/info")
+async def get_blockchain_info(
+        db: AsyncSession = Depends(get_db)
+):
+    """
+    兼容前端使用的 /info 路由，内部复用 /chain-info 的实现
+    """
+    return await get_chain_info(db)
+
+
 @router.post("/mining/start")
 async def start_auto_mining(
         miner_address: str,
@@ -151,3 +226,45 @@ async def start_auto_mining(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="当前版本不支持自动挖矿，请使用 /api/v1/blockchain/mine 接口进行手动挖矿",
     )
+
+
+@router.get("/blocks")
+async def get_blocks(
+        page: int = 1,
+        limit: int = 10,
+        db: AsyncSession = Depends(get_db)
+):
+    """分页获取链上区块"""
+    from app.db.models.block_chain import Block
+
+    # 统计总数
+    stmt_count = select(func.count()).select_from(Block)
+    result_count = await db.execute(stmt_count)
+    total = result_count.scalar() or 0
+
+    # 分页查询
+    stmt_list = (
+        select(Block)
+        .order_by(Block.block_number.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    result_list = await db.execute(stmt_list)
+    items = result_list.scalars().all()
+
+    # 序列化
+    serialized = []
+    for b in items:
+        serialized.append({
+            "block_number": b.block_number,
+            "block_hash": b.block_hash,
+            "previous_hash": b.previous_hash,
+            "transactions_count": b.transaction_count,
+            "timestamp": b.timestamp.isoformat() if b.timestamp else None,
+            "miner_address": b.miner_address
+        })
+
+    return {
+        "items": serialized,
+        "total": total
+    }

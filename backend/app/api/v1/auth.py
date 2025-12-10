@@ -15,7 +15,21 @@ from app.schemas.auth import Token
 from app.schemas.user import UserCreate, UserResponse
 from app.core.security import get_password_hash
 
+from typing import List, Optional
+
+from pydantic import BaseModel, EmailStr
+
+from app.api.deps import get_current_user
+
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    wallet_address: Optional[str] = None
+    balance: Optional[float] = None
+    is_admin: Optional[bool] = None
+    password: Optional[str] = None
 
 
 @router.post("/login", response_model=Token)
@@ -93,3 +107,149 @@ async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(db_user)
     return db_user
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def list_users(
+    page: int = 1,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    用户列表（仅管理员可见）
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+
+    if page < 1:
+        page = 1
+    if limit < 1:
+        limit = 10
+
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(User).offset(offset).limit(limit)
+    )
+    users = result.scalars().all()
+    return users
+
+
+@router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    获取单个用户详情（仅管理员可见）
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return user
+
+
+@router.put("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    user_in: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    更新用户信息（仅管理员可操作）
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # 可选字段更新
+    if user_in.username is not None:
+        user.username = user_in.username
+    if user_in.email is not None:
+        user.email = user_in.email
+    if user_in.is_admin is not None:
+        user.is_admin = user_in.is_admin
+    if user_in.wallet_address is not None:
+        user.wallet_address = user_in.wallet_address
+    if user_in.balance is not None:
+        user.balance = user_in.balance
+
+    # 如果需要更新密码，按注册时同样的规则限制长度并重新哈希
+    if user_in.password:
+        try:
+            if len(user_in.password.encode("utf-8")) > 72:
+                raise HTTPException(
+                    status_code=400,
+                    detail="密码过长，请控制在 72 字节以内（建议不超过 20–24 个字符的中英文组合）",
+                )
+            user.hash_passwd = get_password_hash(user_in.password)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="密码过长，请控制在 72 字节以内（建议不超过 20–24 个字符的中英文组合）",
+            )
+
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    删除用户（仅管理员可操作）
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    await db.delete(user)
+    await db.commit()
+    # 204 No Content 不需要返回体
+    return None

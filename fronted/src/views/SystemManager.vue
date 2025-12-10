@@ -15,6 +15,7 @@
       <div class="flex items-center space-x-3">
         <button
           class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-300 shadow-sm hover:shadow"
+          @click="handleOpenCreate"
         >
           <i class="fas fa-plus mr-2" />
           <span>新增用户</span>
@@ -40,32 +41,6 @@
           >
             <i class="fas fa-users mr-3 w-5 text-center" />
             <span>用户管理</span>
-          </button>
-
-          <button
-            class="w-full text-left px-4 py-3 rounded-lg font-medium flex items-center transition-all duration-300"
-            :class="
-              currentTab === 'role'
-                ? 'bg-primary-light text-primary'
-                : 'hover:bg-gray-100 text-gray-700'
-            "
-            @click="currentTab = 'role'"
-          >
-            <i class="fas fa-shield-alt mr-3 w-5 text-center" />
-            <span>权限与角色管理</span>
-          </button>
-
-          <button
-            class="w-full text-left px-4 py-3 rounded-lg font-medium flex items-center transition-all duration-300"
-            :class="
-              currentTab === 'settings'
-                ? 'bg-primary-light text-primary'
-                : 'hover:bg-gray-100 text-gray-700'
-            "
-            @click="currentTab = 'settings'"
-          >
-            <i class="fas fa-cog mr-3 w-5 text-center" />
-            <span>系统参数设置</span>
           </button>
 
         </nav>
@@ -131,53 +106,55 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <!-- 示例行：后端接好接口后替换为 v-for -->
-                  <tr class="hover:bg-gray-50 transition-all duration-300">
+                  <!-- 从后端加载的用户数据 -->
+                  <tr
+                    v-for="user in users"
+                    :key="user.id"
+                    class="hover:bg-gray-50 transition-all duration-300"
+                  >
                     <td class="px-6 py-4 whitespace-nowrap">
                       <div class="flex items-center">
                         <div
                           class="h-10 w-10 rounded-full bg-primary-light flex items-center justify-center text-primary font-medium"
                         >
-                          AD
+                          {{ (user.username || '?').slice(0, 2).toUpperCase() }}
                         </div>
                         <div class="ml-3">
                           <div class="text-sm font-medium text-gray-700">
-                            admin
+                            {{ user.username }}
                           </div>
                           <div class="text-xs text-gray-500">
-                            系统管理员（示例）
+                            {{ user.is_admin ? '系统管理员' : '普通用户' }}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      admin@example.com
+                      {{ user.email || '—' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span
-                        class="px-2 py-1 text-xs rounded-full bg-success-light text-success"
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="user.is_admin ? 'bg-primary-light text-primary' : 'bg-success-light text-success'"
                       >
-                        启用
+                        {{ user.is_admin ? '管理员' : '启用' }}
                       </span>
                     </td>
                     <td
                       class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                     >
-                      2023-01-15
+                      {{ user.created_at ? user.created_at.slice(0, 19) : '—' }}
                     </td>
                     <td
                       class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
                     >
                       <button
                         class="text-primary hover:text-primary/80 mr-3 transition-colors"
+                        @click="handleOpenEdit(user)"
                       >
                         编辑
                       </button>
-                      <button
-                        class="text-gray-500 hover:text-gray-700 mr-3 transition-colors"
-                      >
-                        详情
-                      </button>
+
                       <button
                         class="text-danger hover:text-danger/80 transition-colors"
                       >
@@ -186,13 +163,13 @@
                     </td>
                   </tr>
 
-                  <!-- 占位：无数据时 -->
-                  <tr>
+                  <!-- 无数据时占位 -->
+                  <tr v-if="!loading && users.length === 0">
                     <td
                       colspan="5"
                       class="px-6 py-10 text-center text-sm text-gray-400"
                     >
-                      用户数据将由后端接口返回，这里仅为布局占位
+                      暂无用户数据
                     </td>
                   </tr>
                 </tbody>
@@ -201,11 +178,14 @@
 
             <!-- 分页占位，后端分页接入后替换 -->
             <div class="flex justify-between items-center mt-6 text-sm text-gray-500">
-              <div>显示 0-0 条，共 0 条（等待后端数据）</div>
+              <div>
+                显示 第 {{ pagination.page }} 页，当前 {{ users.length }} 条记录
+              </div>
               <div class="flex space-x-1">
                 <button
                   class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled
+                  :disabled="pagination.page <= 1 || loading"
+                  @click="handlePrevPage"
                 >
                   上一页
                 </button>
@@ -213,11 +193,12 @@
                   class="px-3 py-1 border border-primary bg-primary text-white rounded"
                   disabled
                 >
-                  1
+                  {{ pagination.page }}
                 </button>
                 <button
-                  class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50"
-                  disabled
+                  class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="users.length < pagination.limit || loading"
+                  @click="handleNextPage"
                 >
                   下一页
                 </button>
@@ -226,420 +207,259 @@
           </div>
         </section>
 
-        <!-- 权限与角色管理 -->
-        <section v-else-if="currentTab === 'role'" class="space-y-6">
-          <div class="bg-white rounded-xl shadow-card p-6">
-            <div class="flex justify-between items-center mb-6">
-              <h2 class="text-xl font-bold text-gray-700">角色管理</h2>
-              <button
-                class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-300 shadow-sm hover:shadow"
-              >
-                <i class="fas fa-plus mr-2" />
-                <span>新增角色</span>
-              </button>
-            </div>
 
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr class="bg-gray-50">
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      角色名称
-                    </th>
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      角色说明
-                    </th>
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      成员数量
-                    </th>
-                    <th
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      创建时间
-                    </th>
-                    <th
-                      class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <!-- 示例数据行 -->
-                  <tr class="hover:bg-gray-50 transition-all duration-300">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                      系统管理员
-                    </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">
-                      拥有系统全部操作权限（示例）
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      1
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      2023-01-10
-                    </td>
-                    <td
-                      class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-                    >
-                      <button
-                        class="text-primary hover:text-primary/80 mr-3 transition-colors"
-                      >
-                        编辑权限
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        分配成员
-                      </button>
-                    </td>
-                  </tr>
+      </div>
+    </div>
 
-                  <!-- 占位无数据 -->
-                  <tr>
-                    <td
-                      colspan="5"
-                      class="px-6 py-10 text-center text-sm text-gray-400"
-                    >
-                      角色列表由后端提供，这里仅做结构展示
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+    <!-- 新增用户弹窗 -->
+    <div
+      v-if="showCreateDialog"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    >
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">新增用户</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">用户名</label>
+            <input
+              v-model="createForm.username"
+              type="text"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="请输入用户名"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">邮箱</label>
+            <input
+              v-model="createForm.email"
+              type="email"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="请输入邮箱（可选）"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">密码</label>
+            <input
+              v-model="createForm.password"
+              type="password"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="请输入密码"
+            />
+          </div>
+          <p class="text-xs text-gray-400">
+            新增用户将作为普通用户创建（is_admin = 0）。
+          </p>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            @click="showCreateDialog = false"
+            :disabled="createLoading"
+          >
+            取消
+          </button>
+          <button
+            class="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            @click="handleCreateUser"
+            :disabled="createLoading"
+          >
+            {{ createLoading ? '提交中...' : '确认创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑用户弹窗 -->
+    <div
+      v-if="showEditDialog"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    >
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">编辑用户</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">用户名</label>
+            <div class="w-full border border-gray-100 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700">
+              {{ editForm.username || '—' }}
             </div>
           </div>
-
-          <!-- 权限树配置区域（简化版，占位） -->
-          <div class="bg-white rounded-xl shadow-card p-6">
-            <h2 class="text-xl font-bold text-gray-700 mb-6">权限配置</h2>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                选择角色
-              </label>
-              <select
-                class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-              >
-                <option>系统管理员（示例）</option>
-                <option>普通用户（示例）</option>
-                <option>审计员（示例）</option>
-              </select>
-            </div>
-
-            <div class="border border-gray-200 rounded-lg p-4 space-y-4">
-              <!-- 这里保留几组典型权限，后端接数据时直接替换 -->
-              <div class="flex items-center">
-                <input
-                  id="perm-all"
-                  type="checkbox"
-                  class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                />
-                <label
-                  for="perm-all"
-                  class="ml-2 text-sm font-medium text-gray-700"
-                >
-                  全选权限（示例）
-                </label>
-              </div>
-              <div class="space-y-3">
-                <div>
-                  <div class="flex items-center">
-                    <input
-                      id="perm-user"
-                      type="checkbox"
-                      class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                    />
-                    <label
-                      for="perm-user"
-                      class="ml-2 text-sm font-medium text-gray-700"
-                    >
-                      用户管理
-                    </label>
-                  </div>
-                  <div class="ml-6 mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <label class="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                      />
-                      <span>查看用户</span>
-                    </label>
-                    <label class="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                      />
-                      <span>添加用户</span>
-                    </label>
-                    <label class="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                      />
-                      <span>编辑用户</span>
-                    </label>
-                    <label class="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                      />
-                      <span>禁用 / 删除用户</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <div class="flex items-center">
-                    <input
-                      id="perm-log"
-                      type="checkbox"
-                      class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                    />
-                    <label
-                      for="perm-log"
-                      class="ml-2 text-sm font-medium text-gray-700"
-                    >
-                      日志管理
-                    </label>
-                  </div>
-                  <div class="ml-6 mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <label class="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                      />
-                      <span>查看操作日志</span>
-                    </label>
-                    <label class="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                      />
-                      <span>导出日志</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex justify-end space-x-3 mt-6">
-              <button
-                class="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-300 text-sm"
-              >
-                取消
-              </button>
-              <button
-                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all duration-300 text-sm"
-              >
-                保存权限
-              </button>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">邮箱</label>
+            <div class="w-full border border-gray-100 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700">
+              {{ editForm.email || '—' }}
             </div>
           </div>
-        </section>
-
-        <!-- 系统参数设置 -->
-        <section v-else-if="currentTab === 'settings'" class="space-y-6">
-          <div class="bg-white rounded-xl shadow-card p-6">
-            <h2 class="text-xl font-bold text-gray-700 mb-6">系统运行配置</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  系统名称
-                </label>
-                <input
-                  type="text"
-                  value="爱心捐赠管理系统"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  区块链节点地址
-                </label>
-                <input
-                  type="text"
-                  value="http://127.0.0.1:8545"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  数据同步周期（分钟）
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value="30"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  系统 Logo
-                </label>
-                <div
-                  class="mt-1 flex items-center justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg"
-                >
-                  <div class="space-y-1 text-center">
-                    <i
-                      class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"
-                    />
-                    <div class="flex text-sm text-gray-600 justify-center">
-                      <label
-                        for="logo-upload"
-                        class="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary/80"
-                      >
-                        <span>上传图片</span>
-                        <input id="logo-upload" type="file" class="sr-only" />
-                      </label>
-                      <p class="pl-1">或拖放文件</p>
-                    </div>
-                    <p class="text-xs text-gray-500">
-                      支持 PNG / JPG / GIF，最大 2MB（示例）
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">钱包地址</label>
+            <div class="w-full border border-gray-100 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700 break-all">
+              {{ editForm.wallet_address || '—' }}
             </div>
           </div>
-
-          <div class="bg-white rounded-xl shadow-card p-6">
-            <h2 class="text-xl font-bold text-gray-700 mb-6">安全配置</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  密码策略
-                </label>
-                <select
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                >
-                  <option>至少 6 位字符（示例）</option>
-                  <option selected>至少 8 位，包含字母和数字（示例）</option>
-                  <option>
-                    至少 10 位，包含大小写字母、数字和特殊字符（示例）
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  会话过期时间（分钟）
-                </label>
-                <input
-                  type="number"
-                  min="5"
-                  value="30"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  登录失败锁定次数
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value="5"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  锁定时长（分钟）
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value="15"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-            </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">钱包余额</label>
+            <input
+              v-model="editForm.balance"
+              type="number"
+              min="0"
+              step="0.01"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="请输入钱包余额"
+            />
           </div>
+        </div>
 
-          <div class="bg-white rounded-xl shadow-card p-6">
-            <h2 class="text-xl font-bold text-gray-700 mb-6">通知配置</h2>
-            <div class="mb-4">
-              <label class="flex items-center">
-                <input
-                  type="checkbox"
-                  class="w-4 h-4 text-primary rounded focus:ring-primary/50"
-                  checked
-                />
-                <span class="ml-2 text-sm font-medium text-gray-700">
-                  启用邮件通知（示例）
-                </span>
-              </label>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  SMTP 服务器
-                </label>
-                <input
-                  type="text"
-                  value="smtp.example.com"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  SMTP 端口
-                </label>
-                <input
-                  type="number"
-                  value="587"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  发件人邮箱
-                </label>
-                <input
-                  type="email"
-                  value="notifications@example.com"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  发件人名称
-                </label>
-                <input
-                  type="text"
-                  value="系统通知"
-                  class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-            </div>
-            <div class="flex justify-end space-x-3 mt-6">
-              <button
-                class="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-300 text-sm"
-              >
-                重置
-              </button>
-              <button
-                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all duration-300 text-sm"
-              >
-                保存配置
-              </button>
-            </div>
-          </div>
-        </section>
-
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            @click="showEditDialog = false"
+            :disabled="editLoading"
+          >
+            取消
+          </button>
+          <button
+            class="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            @click="handleUpdateUser"
+            :disabled="editLoading"
+          >
+            {{ editLoading ? '保存中...' : '保存修改' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
+import { apiListUsers, apiRegister, apiUpdateUser, type UserItem } from '@/api/auth'
 
-// 当前激活的右侧 tab
-const currentTab = ref<'user' | 'role' | 'settings'>('user')
+// 当前激活的右侧 tab（目前只有用户管理）
+const currentTab = ref<'user'>('user')
+
+// 用户列表数据与加载状态
+const users = ref<UserItem[]>([])
+const loading = ref(false)
+
+// 简单分页状态（后端暂未返回 total 时，以当前页数据长度为准）
+const pagination = reactive({
+  page: 1,
+  limit: 10,
+  total: 0,
+})
+
+// 编辑用户弹窗状态与表单
+const showEditDialog = ref(false)
+const editLoading = ref(false)
+const editForm = reactive({
+  id: 0,
+  username: '',
+  email: '',
+  wallet_address: '',
+  balance: '' as string | number,
+})
+
+// 新增用户弹窗状态与表单
+const showCreateDialog = ref(false)
+const createLoading = ref(false)
+const createForm = reactive({
+  username: '',
+  email: '',
+  password: '',
+})
+
+const resetCreateForm = () => {
+  createForm.username = ''
+  createForm.email = ''
+  createForm.password = ''
+}
+
+const handleOpenCreate = () => {
+  resetCreateForm()
+  showCreateDialog.value = true
+}
+
+const handleOpenEdit = (user: UserItem) => {
+  editForm.id = user.id
+  editForm.username = user.username || ''
+  editForm.email = (user.email as string) || ''
+  editForm.wallet_address = (user as any).wallet_address || ''
+  editForm.balance = (user as any).balance ?? ''
+  showEditDialog.value = true
+}
+
+const handleCreateUser = async () => {
+  if (!createForm.username || !createForm.password) {
+    // 简单防呆：用户名和密码必填
+    return
+  }
+  try {
+    createLoading.value = true
+    await apiRegister({
+      username: createForm.username,
+      email: createForm.email,
+      password: createForm.password,
+      is_admin: false, // 普通用户
+    })
+    showCreateDialog.value = false
+    resetCreateForm()
+    await fetchUsers()
+  } catch (e) {
+    console.error('创建用户失败', e)
+  } finally {
+    createLoading.value = false
+  }
+}
+
+const handleUpdateUser = async () => {
+  if (!editForm.id) return
+  try {
+    editLoading.value = true
+    await apiUpdateUser(editForm.id, {
+      balance: editForm.balance === '' ? undefined : Number(editForm.balance),
+    } as any)
+    showEditDialog.value = false
+    await fetchUsers()
+  } catch (e) {
+    console.error('更新用户失败', e)
+  } finally {
+    editLoading.value = false
+  }
+}
+
+const fetchUsers = async () => {
+  try {
+    loading.value = true
+    const data = await apiListUsers({
+      page: pagination.page,
+      limit: pagination.limit,
+    })
+    users.value = data || []
+    pagination.total = users.value.length
+  } catch (e) {
+    console.error('加载用户列表失败', e)
+    users.value = []
+    pagination.total = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+// 简单的前一页 / 下一页占位逻辑（如果后续需要服务端分页，可再扩展）
+const handlePrevPage = () => {
+  if (pagination.page <= 1) return
+  pagination.page -= 1
+  fetchUsers()
+}
+
+const handleNextPage = () => {
+  // 这里只根据当前页条数是否达到 limit 简单判断是否还有下一页
+  if (users.value.length < pagination.limit) return
+  pagination.page += 1
+  fetchUsers()
+}
+
+onMounted(() => {
+  fetchUsers()
+})
 </script>

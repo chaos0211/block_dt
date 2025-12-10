@@ -12,6 +12,10 @@ export const apiCreateDonation = (data: {
 export const apiEnqueueDonation = (id: number) =>
   service.post(`/api/v1/donations/${id}/enqueue`).then(r => r.data);
 
+// 获取最新捐赠记录
+export const apiListRecentDonations = (params: { page?: number; limit?: number }) =>
+  service.get('/api/v1/donations', { params }).then(r => r.data);
+
 // 挖矿（打包交易）
 export const apiMinePending = () =>
   service.post('/api/v1/blockchain/mine-pending').then(r => r.data);

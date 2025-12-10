@@ -65,7 +65,7 @@
             <i class="fas fa-info-circle text-primary mr-2"></i>
             <div class="inline-block align-top">
               <div>系统版本: v1.0.0</div>
-              <div class="text-info mt-1">上次更新: 2023-06-15</div>
+              <div class="text-info mt-1">上次更新: 2025-12-15</div>
             </div>
           </div>
         </div>

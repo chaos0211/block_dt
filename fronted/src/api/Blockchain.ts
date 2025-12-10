@@ -5,12 +5,22 @@ import service from './http'
 /**
  * 链状态信息，从 /api/v1/blockchain/info 获取
  */
+export interface LatestBlockInfo {
+  block_number: number
+  block_hash: string
+  previous_hash: string
+  transactions_count: number
+  timestamp: string | null
+  miner_address: string
+}
+
 export interface ChainInfo {
-  height: number            // 当前区块高度
-  total_txs: number         // 链上总交易（捐赠）笔数
-  total_amount: number      // 链上捐赠总金额
-  node_online?: number      // 在线节点数（当前为本地私有链，可选）
-  sync_status?: string      // 同步状态描述
+  total_blocks: number          // 区块总数
+  height: number                // 当前区块高度
+  total_transactions: number    // 链上总交易（捐赠）笔数
+  pending_pool_size: number     // 交易池待处理数量
+  latest_block: LatestBlockInfo | null
+  chain_valid: boolean          // 链是否通过校验
 }
 
 /**
@@ -89,7 +99,7 @@ export interface ValidateChainResult {
  * GET /api/v1/blockchain/info
  */
 export const getChainInfo = () =>
-  service.get('/api/v1/blockchain/info').then(r => r.data)
+  service.get<ChainInfo>('/api/v1/blockchain/info').then(r => r.data)
 
 /**
  * 分页获取区块列表
