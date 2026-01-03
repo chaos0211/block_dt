@@ -8,26 +8,8 @@
         <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800">
           区块链管理
         </h2>
-        <p class="text-gray-500 mt-1">
-          监控爱心捐赠系统的链上运行状态，查看区块、节点与链配置信息
-        </p>
       </div>
-      <div class="flex space-x-3">
-        <button
-          class="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg flex items-center shadow-sm hover:shadow transition-all duration-300 text-sm"
-          @click="loadChainInfo"
-        >
-          <i class="fas fa-sync-alt mr-2" />
-          <span>刷新状态</span>
-        </button>
-        <button
-          class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center shadow-sm hover:shadow transition-all duration-300 text-sm"
-          @click="handleSyncChain"
-        >
-          <i class="fas fa-bolt mr-2" />
-          <span>同步区块</span>
-        </button>
-      </div>
+
     </div>
 
     <!-- 区块链统计卡片 -->

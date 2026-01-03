@@ -1,16 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- 页面标题 -->
-    <div
-      class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0"
-    >
-      <div>
-        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800">
-          首页总览
-        </h2>
-        <p class="text-gray-500 mt-1">查看平台捐赠概况和区块链状态</p>
-      </div>
-    </div>
+
 
     <!-- 统计卡片区 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

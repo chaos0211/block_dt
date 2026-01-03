@@ -3,7 +3,7 @@ import DefaultLayout from "@/layouts/DefaultLayout.vue";
 import Login from "@/views/Login.vue";
 import Register from "@/views/Register.vue";
 import Cockpit from "@/views/Cockpit.vue";
-import RankingList from "@/views/RankingList.vue";
+// import RankingList from "@/views/RankingList.vue";
 // import RankingList from "@/views/Analytiscs.vue";
 
 const routes: RouteRecordRaw[] = [
@@ -15,9 +15,12 @@ const routes: RouteRecordRaw[] = [
     component: DefaultLayout,
     children: [
       { path: "/cockpit", component: Cockpit },
-      { path: "/ranking", component: RankingList },
+      // { path: "/ranking", component: RankingList },
       { path: '/DonateManager', component: () => import('@/views/DonateManager.vue'), meta: { title: '捐赠项目管理' } },
-      { path: "/predict", component: () => import("@/views/Predict.vue"), meta: { title: "数据预测" } },
+      // { path: "/predict", component: () => import("@/views/Predict.vue"), meta: { title: "数据预测" } },
+      { path: "/user/overview", component: () => import("@/views/UserOverview.vue"), meta: { title: "项目概览" } },
+      { path: "/user/donations", component: () => import("@/views/DonateHistoryManager.vue"), meta: { title: "记录管理" } },
+      { path: "/user/profile", component: () => import("@/views/UserCenter.vue"), meta: { title: "个人中心" } },
       { path: "/transactionPool", component: () => import("@/views/TransactionPool.vue"), meta: { title: "交易池管理" } },
       { path: "/BlockchainManager", component: () => import("@/views/BlockchainManager.vue"), meta: { title: "区块链管理" } },
       { path: "/SystemManager", component: () => import("@/views/SystemManager.vue"), meta: { title: "系统管理" } },

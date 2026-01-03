@@ -43,9 +43,16 @@
               <td class="px-6 py-4">
                 <div class="flex items-center">
                   <div
-                    class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 mr-3 text-xs"
+                    class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400 mr-3 flex-shrink-0"
                   >
-                    图
+                    <img
+                      v-if="project.img_url"
+                      :src="project.img_url"
+                      :alt="project.title"
+                      class="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <span v-else class="text-xs">图</span>
                   </div>
                   <span class="font-medium">{{ project.title }}</span>
                 </div>
@@ -93,11 +100,13 @@
                   </button>
                   <button
                     class="text-gray-500 hover:text-primary transition-colors"
+                    @click.stop="emit('edit', project)"
                   >
                     <i class="fas fa-edit" />
                   </button>
                   <button
                     class="text-gray-500 hover:text-danger transition-colors"
+                    @click.stop="emit('delete', project)"
                   >
                     <i class="fas fa-trash-alt" />
                   </button>
@@ -169,6 +178,7 @@ interface Project {
   current_amount: number
   status: string
   created_at: string
+  img_url?: string | null
   blockchain_address?: string | null
   blockchain_tx_hash?: string | null
   on_chain_at?: string | null
@@ -194,6 +204,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'change-page', page: number): void
   (e: 'view', project: Project): void
+  (e: 'edit', project: Project): void
+  (e: 'delete', project: Project): void
 }>()
 
 const pageCount = computed(() =>

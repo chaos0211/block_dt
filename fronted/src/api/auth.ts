@@ -17,8 +17,16 @@ export interface UserItem {
   username: string
   email: string | null
   is_admin: boolean
-  created_at?: string
+  is_active?: boolean
   wallet_address?: string | null
+  balance?: string | number | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+export interface MeUpdatePayload {
+  username?: string
+  email?: string
+  password?: string
 }
 
 export interface UserListResponse {
@@ -33,6 +41,13 @@ export const apiLogin = (payload: LoginPayload) =>
 // 注册
 export const apiRegister = (payload: RegisterPayload) =>
   service.post('/api/v1/auth/register', payload).then(r => r.data)
+
+// 获取当前登录用户信息（个人中心）
+export const apiGetMe = () => service.get<UserItem>('/api/v1/auth/me').then(r => r.data)
+
+// 更新当前登录用户信息（个人中心：username/email/password）
+export const apiUpdateMe = (payload: MeUpdatePayload) =>
+  service.put<UserItem>('/api/v1/auth/me', payload).then(r => r.data)
 
 // 获取用户列表（分页）
 export const apiListUsers = (params: { page?: number; limit?: number }) =>

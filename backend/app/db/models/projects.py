@@ -19,6 +19,7 @@ class Project(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(64), nullable=False, index=True)
     description = Column(Text, nullable=False)
+    img_url = Column(String(255), nullable=True)
     target_amount = Column(Float, nullable=False)
     current_amount = Column(Float, default=0.0)
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)

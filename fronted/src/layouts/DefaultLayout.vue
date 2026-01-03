@@ -33,39 +33,59 @@
       <aside class="w-64 bg-white border-r border-light-100 flex-shrink-0 hidden md:flex flex-col">
         <nav class="flex-1 overflow-y-auto p-4">
           <ul class="space-y-1">
-            <li>
-              <RouterLink to="/cockpit" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
-                <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i> 首页总览
-              </RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/DonateManager" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
-                <i class="fas fa-folder-open w-5 h-5 mr-3"></i> 公益项目管理
-              </RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/transactionPool" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
-                <i class="fas fa-hand-holding-heart w-5 h-5 mr-3"></i> 交易池管理
-              </RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/BlockchainManager" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
-                <i class="fas fa-link w-5 h-5 mr-3"></i> 区块链管理
-              </RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/SystemManager" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
-                <i class="fas fa-cog w-5 h-5 mr-3"></i> 系统管理
-              </RouterLink>
-            </li>
+            <template v-if="isAdmin">
+              <li>
+                <RouterLink to="/cockpit" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i> 首页总览
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/DonateManager" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-folder-open w-5 h-5 mr-3"></i> 公益项目管理
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/transactionPool" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-hand-holding-heart w-5 h-5 mr-3"></i> 交易池管理
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/BlockchainManager" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-link w-5 h-5 mr-3"></i> 区块链管理
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/SystemManager" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-cog w-5 h-5 mr-3"></i> 用户管理
+                </RouterLink>
+              </li>
+            </template>
+
+            <template v-else>
+              <li>
+                <RouterLink to="/user/overview" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-heart w-5 h-5 mr-3"></i> 公益项目概览
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/user/donations" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-receipt w-5 h-5 mr-3"></i> 捐赠记录
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/user/profile" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                  <i class="fas fa-user w-5 h-5 mr-3"></i> 个人中心
+                </RouterLink>
+              </li>
+            </template>
           </ul>
         </nav>
         <div class="p-4 border-t border-light-100">
           <div class="bg-light-100 rounded-lg p-3 text-xs">
             <i class="fas fa-info-circle text-primary mr-2"></i>
             <div class="inline-block align-top">
-              <div>系统版本: v1.0.0</div>
-              <div class="text-info mt-1">上次更新: 2025-12-15</div>
+              <div>系统版本: v3.0.2</div>
+              <div class="text-info mt-1">上次更新: 2026-03-01</div>
             </div>
           </div>
         </div>
@@ -83,7 +103,25 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const showUserMenu = ref(false)
+
 const currentUserLabel = (localStorage.getItem('session_user') || '未登录')
+
+const isAdmin = (() => {
+  // session_user 可能是 JSON（推荐），也可能只存了用户名
+  const raw = localStorage.getItem('session_user')
+  try {
+    if (raw && raw.trim().startsWith('{')) {
+      const obj = JSON.parse(raw)
+      const v = (obj?.is_admin ?? obj?.isAdmin ?? obj?.admin)
+      return v === 1 || v === true || v === '1'
+    }
+  } catch {
+    // ignore
+  }
+  // 兜底：兼容单独存的标记
+  const v = localStorage.getItem('session_is_admin') ?? localStorage.getItem('is_admin')
+  return v === '1' || v === 'true'
+})()
 
 function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value
@@ -97,6 +135,8 @@ function goProfile() {
 }
 function logout() {
   localStorage.removeItem('session_user')
+  localStorage.removeItem('session_is_admin')
+  localStorage.removeItem('is_admin')
   showUserMenu.value = false
   router.push('/login')
 }

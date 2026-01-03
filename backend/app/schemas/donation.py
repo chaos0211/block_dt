@@ -33,3 +33,20 @@ class DonationResponse(DonationBase):
 
     class Config:
         orm_mode = True
+
+
+class MyDonationItem(BaseModel):
+    """
+    当前用户的捐赠记录返回结构（/api/v1/donations/my）
+    """
+    id: int
+    project_id: int
+    project_title: str
+    amount: float
+    status: TransactionStatus
+    gas_fee: float
+    created_at: datetime
+    confirmed_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True

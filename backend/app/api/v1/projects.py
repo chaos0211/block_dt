@@ -11,6 +11,7 @@ from app.schemas.projects import (
     ProjectResponse,
     ProjectList,
 )
+from app.schemas.projects import ProjectCreate as ProjectUpdate
 from app.db.models.projects import Project, ProjectStatus
 
 # 服务层导入
@@ -38,6 +39,47 @@ async def create_project(
     )
 
     db.add(project)
+    await db.commit()
+    await db.refresh(project)
+    return project
+
+
+@router.put("/{project_id}", response_model=ProjectResponse)
+async def update_project(
+    project_id: int,
+    project_data: ProjectUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    更新项目（仅管理员或项目创建者）
+    """
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalars().first()
+
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在",
+        )
+
+    # 权限校验：管理员 or 创建者
+    if not current_user.is_admin and project.creator_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限修改该项目",
+        )
+
+    # 只允许更新基础信息
+    project.title = project_data.title
+    project.description = project_data.description
+    project.target_amount = project_data.target_amount
+    project.img_url = project_data.img_url
+
+    # 可选字段（如果 schema 中存在）
+    if hasattr(project_data, "img_url"):
+        project.img_url = project_data.img_url
+
     await db.commit()
     await db.refresh(project)
     return project

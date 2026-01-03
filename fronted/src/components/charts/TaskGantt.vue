@@ -13,11 +13,11 @@ onMounted(()=> {
       formatter:(p:any)=>{ const s=new Date(p.data.value[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                            const e=new Date(p.data.value[1]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); return `${s} - ${e}`;}},
       data:[
-        { name:"数据采集", start:"2023-06-15 08:00", end:"2023-06-15 09:30", value:[ms("2023-06-15 08:00"),ms("2023-06-15 09:30"),0], itemStyle:{ color:"#00B42A" }},
-        { name:"数据清洗", start:"2023-06-15 09:30", end:"2023-06-15 10:45", value:[ms("2023-06-15 09:30"),ms("2023-06-15 10:45"),1], itemStyle:{ color:"#00B42A" }},
-        { name:"数据分析", start:"2023-06-15 10:45", end:"2023-06-15 12:30", value:[ms("2023-06-15 10:45"),ms("2023-06-15 12:30"),2], itemStyle:{ color:"#00B42A" }},
-        { name:"数据预测", start:"2023-06-15 12:30", end:"2023-06-15 14:15", value:[ms("2023-06-15 12:30"),ms("2023-06-15 14:15"),3], itemStyle:{ color:"#FF7D00" }},
-        { name:"报表生成", start:"2023-06-15 14:15", end:"2023-06-15 15:00", value:[ms("2023-06-15 14:15"),ms("2023-06-15 15:00"),4], itemStyle:{ color:"#165DFF" }},
+        { name:"数据采集", start:"2026-01-01 08:00", end:"2026-01-01 09:30", value:[ms("2026-01-01 08:00"),ms("2026-01-01 09:30"),0], itemStyle:{ color:"#00B42A" }},
+        { name:"数据清洗", start:"2026-01-01 09:30", end:"2026-01-01 10:45", value:[ms("2026-01-01 09:30"),ms("2026-01-01 10:45"),1], itemStyle:{ color:"#00B42A" }},
+        { name:"数据分析", start:"2026-01-01 10:45", end:"2026-01-01 12:30", value:[ms("2026-01-01 10:45"),ms("2026-01-01 12:30"),2], itemStyle:{ color:"#00B42A" }},
+        { name:"数据预测", start:"2026-01-01 12:30", end:"2026-01-01 14:15", value:[ms("2026-01-01 12:30"),ms("2026-01-01 14:15"),3], itemStyle:{ color:"#FF7D00" }},
+        { name:"报表生成", start:"2026-01-01 14:15", end:"2026-01-01 15:00", value:[ms("2026-01-01 14:15"),ms("2026-01-01 15:00"),4], itemStyle:{ color:"#165DFF" }},
       ]}],
   });
   window.addEventListener("resize", ()=>chart.resize());

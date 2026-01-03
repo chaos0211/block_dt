@@ -1,50 +1,12 @@
 <template>
   <div class="space-y-6">
     <!-- 顶部标题 + 操作按钮 -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <i class="fas fa-heart text-primary text-2xl" />
-        <div>
-          <h1 class="text-xl font-bold text-gray-700">系统管理</h1>
-          <p class="text-sm text-gray-400">
-            管理系统用户、角色权限、运行参数与审计日志
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center space-x-3">
-        <button
-          class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-300 shadow-sm hover:shadow"
-          @click="handleOpenCreate"
-        >
-          <i class="fas fa-plus mr-2" />
-          <span>新增用户</span>
-        </button>
-      </div>
-    </div>
 
 
 
     <!-- 主内容区域：左侧导航 + 右侧不同功能块 -->
     <div class="flex flex-col lg:flex-row gap-6">
       <!-- 左侧系统管理导航 -->
-      <div class="lg:w-1/5 bg-white rounded-xl shadow-card p-4 h-fit">
-        <nav class="space-y-1">
-          <button
-            class="w-full text-left px-4 py-3 rounded-lg font-medium flex items-center transition-all duration-300"
-            :class="
-              currentTab === 'user'
-                ? 'bg-primary-light text-primary'
-                : 'hover:bg-gray-100 text-gray-700'
-            "
-            @click="currentTab = 'user'"
-          >
-            <i class="fas fa-users mr-3 w-5 text-center" />
-            <span>用户管理</span>
-          </button>
-
-        </nav>
-      </div>
 
       <!-- 右侧内容区 -->
       <div class="lg:w-4/5 space-y-6">
@@ -53,25 +15,6 @@
           <div class="bg-white rounded-xl shadow-card p-6">
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-xl font-bold text-gray-700">用户管理</h2>
-              <div class="flex space-x-2">
-                <div class="relative">
-                  <input
-                    type="text"
-                    placeholder="搜索用户名或邮箱..."
-                    class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-sm"
-                  />
-                  <i
-                    class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"
-                  />
-                </div>
-                <select
-                  class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                >
-                  <option>所有状态</option>
-                  <option>启用</option>
-                  <option>禁用</option>
-                </select>
-              </div>
             </div>
 
             <div class="overflow-x-auto">

@@ -8,6 +8,7 @@ class ProjectBase(BaseModel):
     title: str
     description: str
     target_amount: float
+    img_url: Optional[str] = None
 
     @validator('target_amount')
     def validate_target_amount(cls, v):
@@ -29,6 +30,7 @@ class ProjectApprove(BaseModel):
 class ProjectResponse(ProjectBase):
     id: int
     current_amount: float
+    # img_url: Optional[str] = None
     creator_id: int
     status: ProjectStatus
     blockchain_address: Optional[str] = None

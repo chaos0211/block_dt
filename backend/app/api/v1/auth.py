@@ -23,12 +23,20 @@ from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
+
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     wallet_address: Optional[str] = None
     balance: Optional[float] = None
     is_admin: Optional[bool] = None
+    password: Optional[str] = None
+
+
+# 普通用户自身信息更新 schema
+class MeUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
     password: Optional[str] = None
 
 
@@ -62,6 +70,66 @@ async def login(
         expires_delta=access_token_expires,
     )
     return Token(access_token=access_token)
+
+
+# 获取当前登录用户信息（所有登录用户可用）
+
+@router.get("/me", response_model=UserResponse)
+async def me(
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前登录用户信息（所有登录用户可用）"""
+    return current_user
+
+
+# 普通用户更新自身信息（仅允许修改：username / email / password）
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    me_in: MeUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """更新当前登录用户信息（仅允许修改：username / email / password）"""
+
+    # 重新从库里取当前用户，避免直接修改 Depends 注入对象带来的状态问题
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # username 唯一性校验
+    if me_in.username is not None and me_in.username != user.username:
+        chk = await db.execute(select(User).where(User.username == me_in.username))
+        if chk.scalars().first():
+            raise HTTPException(status_code=400, detail="Username already registered")
+        user.username = me_in.username
+
+    # email 唯一性校验
+    if me_in.email is not None and me_in.email != user.email:
+        chk = await db.execute(select(User).where(User.email == me_in.email))
+        if chk.scalars().first():
+            raise HTTPException(status_code=400, detail="Email already registered")
+        user.email = me_in.email
+
+    # password 更新（同注册规则：bcrypt 明文 <= 72 bytes）
+    if me_in.password:
+        try:
+            if len(me_in.password.encode("utf-8")) > 72:
+                raise HTTPException(
+                    status_code=400,
+                    detail="密码过长，请控制在 72 字节以内（建议不超过 20–24 个字符的中英文组合）",
+                )
+            user.hash_passwd = get_password_hash(me_in.password)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="密码过长，请控制在 72 字节以内（建议不超过 20–24 个字符的中英文组合）",
+            )
+
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 @router.post("/register", response_model=UserResponse)
 async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
