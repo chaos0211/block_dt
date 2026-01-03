@@ -1,7 +1,8 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.db.models.donation import Donation, TransactionStatus
+from app.db.models.block_chain import TransactionPool
 from app.db.models.projects import Project, ProjectStatus
 from app.db.models.user import User
 from app.schemas.donation import DonationCreate
@@ -37,19 +38,43 @@ class DonationService:
 
         try:
             print("DEBUG: start donation creation")
+            # 先创建捐赠记录（拿到 donation.id 便于写入 data）
             donation = Donation(
                 amount=donation_data.amount,
                 donor_id=donor_id,
                 project_id=donation_data.project_id,
                 status=TransactionStatus.PENDING,
                 is_anonymous=donation_data.is_anonymous,
-                gas_fee=0.01
+                gas_fee=0.0,
             )
             self.db.add(donation)
             await self.db.commit()
             await self.db.refresh(donation)
+            # 交易池拥堵度（用于 Gas 估算）
+            pending_cnt_result = await self.db.execute(select(func.count(TransactionPool.id)))
+            pending_pool_size = int(pending_cnt_result.scalar() or 0)
 
             timestamp = str(int(datetime.now(CN_TZ).timestamp()))
+
+            # 先准备交易 data（用于 Gas 估算与链上追踪）
+            gas_estimation_payload: Dict[str, Any] = {
+                "donation_id": donation.id,
+                "project_id": project.id,
+                "donor_id": donor_id,
+                "is_anonymous": donation_data.is_anonymous,
+                "timestamp": timestamp,
+            }
+
+            # 估算 Gas（教学/私链模拟版：可解释、可复现、随拥堵/数据/类型变化）
+            donation.gas_fee = self.blockchain.estimate_gas_fee(
+                tx_type="donation",
+                amount=float(donation_data.amount),
+                data=gas_estimation_payload,
+                pending_pool_size=pending_pool_size,
+            )
+
+            # 持久化 gas_fee
+            await self.db.flush()
             transaction_hash = self.blockchain.generate_transaction_hash(
                 donor.wallet_address,
                 project.blockchain_address,
@@ -69,13 +94,7 @@ class DonationService:
                 amount=donation_data.amount,
                 transaction_type="donation",
                 gas_fee=donation.gas_fee,
-                data={
-                    "donation_id": donation.id,
-                    "project_id": project.id,
-                    "donor_id": donor_id,
-                    "is_anonymous": donation_data.is_anonymous,
-                    "timestamp": timestamp,
-                }
+                data=gas_estimation_payload
             )
             print("DEBUG: tx_data =", tx_data)
 
@@ -83,7 +102,6 @@ class DonationService:
             print("DEBUG: added_to_pool =", added)
             if added:
                 donation.status = TransactionStatus.IN_POOL
-                from decimal import Decimal
                 donor.balance = donor.balance - (Decimal(str(donation_data.amount)) + Decimal(str(donation.gas_fee)))
 
                 await self.db.commit()

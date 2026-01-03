@@ -29,7 +29,7 @@
         <div class="flex items-center justify-between mb-6">
           <div class="text-sm text-gray-600">
             当前余额：
-            <span class="font-semibold text-gray-800">¥{{ formatInt(balance) }}</span>
+            <span class="font-semibold text-gray-800">¥{{ maskBalance(balance) }}</span>
             <span class="ml-3 text-gray-400" v-if="username">用户：{{ username }}</span>
           </div>
         </div>
@@ -99,6 +99,28 @@ const formatInt = (n: number | string | null | undefined) => {
   const v = Number(n ?? 0)
   if (Number.isNaN(v)) return '0'
   return v.toLocaleString('zh-CN', { maximumFractionDigits: 0 })
+}
+
+const maskBalance = (n: number | string | null | undefined, keepStart = 2, keepEnd = 2) => {
+  const v = Number(n ?? 0)
+  if (!Number.isFinite(v)) return '0'
+
+  // 余额显示按“整数金额”处理
+  const raw = Math.floor(v).toString()
+  const len = raw.length
+
+  // 太短就不遮
+  if (len <= keepStart + keepEnd) return raw
+
+  // 至少保留前后各 1 位
+  const ks = Math.max(1, Math.min(keepStart, len - 1))
+  const ke = Math.max(1, Math.min(keepEnd, len - ks))
+
+  const head = raw.slice(0, ks)
+  const tail = raw.slice(len - ke)
+
+  // 用 ** 做中间掩码（与示例一致：¥99**00）
+  return `${head}**${tail}`
 }
 
 const displayProjects = computed(() => {

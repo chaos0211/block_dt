@@ -23,7 +23,7 @@
         </button>
         <div v-if="showUserMenu" class="absolute right-0 top-10 mt-2 w-44 bg-white border border-light-100 rounded-lg shadow-dropdown z-50">
           <div class="px-3 py-2 text-sm text-info border-b border-light-100">{{ currentUserLabel }}</div>
-          <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-light-100" @click.stop="goProfile">个人信息（功能待添加）</button>
+          <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-light-100" @click.stop="goProfile">个人信息</button>
           <button type="button" class="w-full text-left px-3 py-2 text-sm text-danger hover:bg-danger/5" @click.stop="logout">退出登录</button>
         </div>
       </div>
@@ -104,7 +104,24 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const showUserMenu = ref(false)
 
-const currentUserLabel = (localStorage.getItem('session_user') || '未登录')
+const currentUserLabel = (() => {
+  const raw = localStorage.getItem('session_user')
+  if (!raw) return '未登录'
+
+  // session_user 推荐存 JSON；若不是 JSON，则直接当作用户名
+  try {
+    if (raw.trim().startsWith('{')) {
+      const obj = JSON.parse(raw)
+      const uname = obj?.username
+      if (typeof uname === 'string' && uname.trim()) return uname
+      return '已登录'
+    }
+  } catch {
+    // ignore
+  }
+
+  return raw
+})()
 
 const isAdmin = (() => {
   // session_user 可能是 JSON（推荐），也可能只存了用户名
@@ -131,7 +148,7 @@ function onRootClick() {
 }
 function goProfile() {
   showUserMenu.value = false
-  alert('个人信息功能待添加')
+  router.push('/user/profile')
 }
 function logout() {
   localStorage.removeItem('session_user')

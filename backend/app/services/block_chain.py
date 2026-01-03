@@ -1,6 +1,7 @@
 import hashlib
 import json
 import time
+import math
 from typing import List, Optional, Dict, Any
 
 from sqlalchemy import func
@@ -27,6 +28,74 @@ class BlockchainService:
         """生成交易哈希"""
         data = f"{from_addr}{to_addr}{amount}{timestamp}"
         return self.generate_hash(data)
+
+    def estimate_gas_fee(
+        self,
+        *,
+        tx_type: str,
+        amount: float = 0.0,
+        data: Optional[Dict[str, Any]] = None,
+        pending_pool_size: int = 0,
+    ) -> float:
+        """估算 Gas 费用（教学/私链模拟版）。
+
+        设计目标：
+        - 可解释、可复现：同样输入得到同样输出
+        - 拥堵越高（交易池越大）费用越高
+        - 交易类型越“复杂”费用越高
+        - data 越大（模拟 calldata/存储）费用越高
+        - 金额越大（轻微影响）费用略高
+
+        返回值单位：系统内部的“链内费用”数值（float），用于排序与展示。
+        """
+        try:
+            safe_type = (tx_type or "donation").lower()
+
+            # 1) 交易类型基础复杂度（模拟不同合约函数/指令复杂度）
+            base_units_map: Dict[str, float] = {
+                "donation": 21000.0,
+                "project_creation": 32000.0,
+                "fund_usage": 26000.0,
+                "project_update": 24000.0,
+            }
+            base_units = base_units_map.get(safe_type, 21000.0)
+
+            # 2) 拥堵因子：池子越大，费用越高（封顶，避免离谱）
+            p = max(0, int(pending_pool_size))
+            congestion = 1.0 + min(1.5, p / 20.0)  # 0->1.0, 20->2.0, 30+ capped at 2.5
+
+            # 3) data 大小因子：JSON 序列化后的字节数（封顶）
+            payload = data if isinstance(data, dict) else {}
+            try:
+                data_bytes = len(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8"))
+            except Exception:
+                data_bytes = 0
+            data_factor = 1.0 + min(0.8, data_bytes / 2048.0)  # 0B->1.0, 2KB->2.0, capped at 1.8
+
+            # 4) 金额因子：轻微增加（避免金额主导费用）
+            a = float(amount or 0.0)
+            if a < 0:
+                a = 0.0
+            amount_factor = 1.0 + min(0.5, (math.log10(1.0 + a) / 10.0))
+
+            # 5) 模拟 EIP-1559：base fee + tip（随拥堵上升）
+            base_gwei = 12.0
+            tip_gwei = 1.0 + min(3.0, p / 15.0)
+            gas_price_gwei = base_gwei * congestion + tip_gwei
+
+            # 6) 估算 gas used & fee
+            gas_units = base_units * congestion * data_factor * amount_factor
+
+            # 将 gwei 转换为“链内费用”（保持数值可读）
+            fee = gas_units * gas_price_gwei * 1e-9
+
+            # 7) 约束范围：避免过小/过大导致展示不合理
+            fee = max(0.00001, min(0.02, fee))
+
+            return float(round(fee, 8))
+        except Exception:
+            # 兜底：任何异常返回一个小的合理值
+            return 0.00001
 
     async def create_genesis_block(self) -> Block:
         """创建创世区块"""

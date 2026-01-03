@@ -152,10 +152,20 @@ const formatNumber = (num: number | null | undefined) => {
 }
 
 const formatGas = (v: number | null | undefined) => {
-  const n = Number(v ?? 0)
-  if (Number.isNaN(n)) return '0'
-  // gas_fee 一般很小，保留 2 位
-  return n.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  const n = Number(v)
+  if (!Number.isFinite(n) || n <= 0) return '0'
+
+  // gas_fee 通常非常小（例如 0.00042314）。
+  // 规则：
+  // - < 0.01：最多保留 8 位小数（并去掉末尾 0）
+  // - >= 0.01：最多保留 4 位小数（并去掉末尾 0）
+  const maxDigits = n < 0.01 ? 8 : 4
+  const s = n.toFixed(maxDigits)
+
+  // 去掉末尾 0 与多余的小数点
+  const trimmed = s.replace(/\.0+$/, '').replace(/(\.[0-9]*?)0+$/, '$1')
+
+  return trimmed
 }
 
 const shortHash = (h?: string | null) => {

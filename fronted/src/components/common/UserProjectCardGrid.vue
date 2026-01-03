@@ -52,7 +52,7 @@
             type="button"
             @click="$emit('view', p)"
           >
-            查看并捐赠
+            查看详情
           </button>
         </div>
       </div>

@@ -86,8 +86,7 @@
               </td>
               <td class="px-6 py-4">
                 <div>
-                  <div class="text-sm">{{ project.blockchain_tx_hash ? '已上链' : '待上链' }}</div>
-                  <div v-if="project.blockchain_tx_hash" class="text-xs text-gray-500">Tx: {{ project.blockchain_tx_hash.slice(0, 10) }}...</div>
+                  <div v-if="project.blockchain_tx_hash" class="text-xs text-gray-500">{{ project.blockchain_tx_hash.slice(0, 10) }}...</div>
                 </div>
               </td>
               <td class="px-6 py-4 text-right">
